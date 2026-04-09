@@ -41,6 +41,12 @@ interface ScannerStats {
   totalAnswers: number;
 }
 
+declare global {
+  interface Window {
+    cv: any;
+  }
+}
+
 export function RealTimeMarkPaperScanner() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const displayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -247,7 +253,7 @@ export function RealTimeMarkPaperScanner() {
           continue;
         }
 
-        const isFilled = this.isContourFilled(contour, binary, OMR_CONFIG.fillThreshold);
+        const isFilled = isContourFilled(contour, binary, OMR_CONFIG.fillThreshold);
 
         // Cluster contours into rows and columns to identify Q/A pairs
         const rowIndex = Math.floor(rect.y / (rect.height + OMR_CONFIG.bubbleRowGap));
@@ -360,32 +366,40 @@ export function RealTimeMarkPaperScanner() {
    * Main processing loop
    */
   const startScanningLoop = useCallback(() => {
-    if (!isRunningRef.current || !videoRef.current) return;
+    const loop = () => {
+      if (!isRunningRef.current || !videoRef.current) return;
 
-    const frameStart = performance.now();
+      const frameStart = performance.now();
 
-    // Process frame
-    const results = this.processFrame();
+      // Process frame
+      const results = processFrame();
 
-    // Update stats
-    const correctCount = results.filter((r) => r.isCorrect === true).length;
-    const totalCount = results.filter((r) => r.isCorrect !== null).length;
+      // Update stats
+      const correctCount = results.filter((r) => r.isCorrect === true).length;
+      const totalCount = results.filter((r) => r.isCorrect !== null).length;
 
-    setStats({
-      fps: Math.round(1000 / (performance.now() - frameStart)),
-      bubblesDetected: results.length,
-      correctAnswers: correctCount,
-      totalAnswers: totalCount,
-    });
+      setStats({
+        fps: Math.round(1000 / (performance.now() - frameStart)),
+        bubblesDetected: results.length,
+        correctAnswers: correctCount,
+        totalAnswers: totalCount,
+      });
 
-    // Draw overlays
-    this.drawOverlays(results);
+      // Draw overlays
+      drawOverlays(results);
 
-    // Update results
-    setBubbleResults(results);
+      // Update results
+      setBubbleResults(results);
 
-    // Schedule next frame
-    rafIdRef.current = requestAnimationFrame(() => this.startScanningLoop());
+      // Schedule next frame
+      rafIdRef.current = requestAnimationFrame(() => {
+        if (isRunningRef.current) {
+          loop();
+        }
+      });
+    };
+
+    loop();
   }, [processFrame, drawOverlays]);
 
   /**
@@ -407,7 +421,7 @@ export function RealTimeMarkPaperScanner() {
     setError(null);
 
     // Start the processing loop
-    rafIdRef.current = requestAnimationFrame(() => this.startScanningLoop());
+    rafIdRef.current = requestAnimationFrame(() => startScanningLoop());
   }, [openCVLoaded, cameraPermission, requestCameraAccess, startScanningLoop]);
 
   /**

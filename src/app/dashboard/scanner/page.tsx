@@ -1,9 +1,9 @@
-use client";
+"use client";
  
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { DashboardSidebar } from "@/components/DashboardSidebar";
-import { DashboardTopBar } from "@/components/DashboardTopBar";
+import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
+import { DashboardTopBar } from "@/components/dashboard/DashboardTopBar";
 import { RealTimeMarkPaperScanner } from "@/components/RealTimeMarkPaperScanner";
 import { AlertCircle, Info } from "lucide-react";
  
@@ -61,7 +61,7 @@ export default function ScannerPage() {
                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-blue/15 text-xs font-bold text-sky-blue">
                       1
                     </span>
-                    <span>Click "Start Scanner" to access your camera</span>
+                    <span>Click &quot;Start Scanner&quot; to access your camera</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-blue/15 text-xs font-bold text-sky-blue">
@@ -154,7 +154,7 @@ export default function ScannerPage() {
  
                 <div>
                   <h3 className="font-semibold text-navy">
-                    What if the scanner doesn't detect bubbles?
+                    What if the scanner doesn&apos;t detect bubbles?
                   </h3>
                   <p className="mt-2 text-sm text-navy/70">
                     Check lighting, paper angle, and bubble clarity. Try tilting
