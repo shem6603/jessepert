@@ -20,7 +20,7 @@ const SUBJECT_OPTIONS = [
 ] as const;
 
 const selectClassName =
-  "w-full min-h-[44px] appearance-none rounded-xl border border-dark-teal/25 bg-white px-4 py-3 text-sm font-medium text-navy shadow-sm outline-none transition focus:border-sky-blue focus:ring-2 focus:ring-sky-blue/25";
+  "w-full min-h-[44px] appearance-none rounded-2xl border border-dark-teal/15 bg-white/80 px-4 py-3 text-sm font-semibold text-navy shadow-sm outline-none transition focus:border-sky-blue focus:ring-2 focus:ring-sky-blue/20";
 
 export function MarkPaperUpload() {
   const [gradeLevel, setGradeLevel] = useState("");
@@ -70,12 +70,12 @@ export function MarkPaperUpload() {
 
   return (
     <section
-      className="rounded-2xl border border-dark-teal/10 bg-white p-5 shadow-sm sm:p-8"
+      className="rounded-3xl border border-dark-teal/10 bg-white/80 p-5 shadow-sm backdrop-blur-sm sm:p-8"
       aria-labelledby="mark-paper-heading"
     >
       <h2
         id="mark-paper-heading"
-        className="text-xl font-bold text-navy sm:text-2xl"
+        className="text-xl font-extrabold tracking-tight text-navy sm:text-2xl"
       >
         Mark a New Paper
       </h2>
@@ -133,12 +133,30 @@ export function MarkPaperUpload() {
           ref={inputRef}
           type="file"
           accept="image/*"
+          capture="environment"
           className="sr-only"
           onChange={(e) => setFileFromList(e.target.files)}
         />
 
         {!previewUrl ? (
-          <div
+          <>
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-semibold text-navy">Add a photo</p>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <button
+                  type="button"
+                  onClick={() => inputRef.current?.click()}
+                  className="touch-manipulation inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-sky-blue px-4 py-2.5 text-sm font-extrabold text-white shadow-sm shadow-sky-blue/20 transition hover:bg-sky-blue/90 active:scale-[0.99]"
+                >
+                  Take photo / Upload
+                </button>
+                <p className="text-xs text-navy/55 sm:max-w-[22rem] sm:text-right">
+                  On mobile, this opens your camera. On desktop, choose a file.
+                </p>
+              </div>
+            </div>
+
+            <div
             role="button"
             tabIndex={0}
             onKeyDown={(e) => {
@@ -161,13 +179,13 @@ export function MarkPaperUpload() {
             }}
             onDrop={onDrop}
             onClick={() => inputRef.current?.click()}
-            className={`flex cursor-pointer flex-col items-center justify-center gap-4 rounded-2xl border-2 border-dashed px-6 py-14 text-center transition-colors touch-manipulation ${
+            className={`flex cursor-pointer flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed px-6 py-14 text-center transition-colors touch-manipulation ${
               isDragging
-                ? "border-sky-blue bg-sky-blue/5"
-                : "border-dark-teal/35 bg-soft-teal/40 hover:border-sky-blue/50 hover:bg-sky-blue/5"
+                ? "border-sky-blue bg-sky-blue/6"
+                : "border-dark-teal/25 bg-soft-teal/50 hover:border-sky-blue/45 hover:bg-sky-blue/6"
             }`}
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-dark-teal/10">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/80 shadow-sm ring-1 ring-dark-teal/10">
               <Upload className="h-7 w-7 text-sky-blue" aria-hidden />
             </div>
             <div>
@@ -179,14 +197,15 @@ export function MarkPaperUpload() {
                 PNG or JPG — keep the page flat and well lit.
               </p>
             </div>
-            <span className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-medium text-dark-teal ring-1 ring-dark-teal/20">
+            <span className="inline-flex items-center gap-2 rounded-2xl bg-white/80 px-4 py-2 text-sm font-semibold text-dark-teal ring-1 ring-dark-teal/15">
               <FileImage className="h-4 w-4" aria-hidden />
               Choose file
             </span>
-          </div>
+            </div>
+          </>
         ) : (
-          <div className="flex flex-col items-start gap-4 rounded-2xl border border-dark-teal/15 bg-soft-teal/30 p-4 sm:flex-row sm:items-center">
-            <div className="relative h-36 w-full overflow-hidden rounded-xl bg-navy/5 sm:h-28 sm:w-40 sm:shrink-0">
+          <div className="flex flex-col items-start gap-4 rounded-3xl border border-dark-teal/10 bg-soft-teal/45 p-4 sm:flex-row sm:items-center">
+            <div className="relative h-36 w-full overflow-hidden rounded-2xl bg-navy/5 sm:h-28 sm:w-40 sm:shrink-0">
               <Image
                 src={previewUrl}
                 alt="Selected homework preview"
@@ -217,7 +236,7 @@ export function MarkPaperUpload() {
           type="button"
           disabled={!canSubmit}
           onClick={handleGradePaper}
-          className={`touch-manipulation w-full min-h-[48px] rounded-xl px-6 py-3.5 text-base font-bold transition sm:w-auto sm:min-w-[200px] ${
+          className={`touch-manipulation w-full min-h-[48px] rounded-2xl px-6 py-3.5 text-base font-extrabold transition sm:w-auto sm:min-w-[200px] ${
             canSubmit
               ? "bg-sky-blue text-white shadow-lg shadow-sky-blue/25 hover:bg-sky-blue/90 active:scale-[0.99]"
               : "cursor-not-allowed bg-navy/10 text-navy/40"

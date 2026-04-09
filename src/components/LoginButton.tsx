@@ -1,11 +1,23 @@
 "use client";
 
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { LogIn, LogOut } from "lucide-react";
 import Image from "next/image";
 
 export default function LoginButton() {
   const { user, loading, loginWithGoogle, logout } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (!user) return;
+    // After a successful sign-in from the landing page, take the user to the dashboard.
+    if (pathname === "/") {
+      router.push("/dashboard");
+    }
+  }, [user, pathname, router]);
 
   if (loading) {
     return (

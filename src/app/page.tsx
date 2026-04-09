@@ -39,7 +39,7 @@ export default function Home() {
         {/* Top Badge */}
         <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/70 text-dark-teal font-medium text-xs sm:text-sm shadow-sm border border-dark-teal/10 leading-snug backdrop-blur-sm">
           <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-blue flex-shrink-0" aria-hidden="true" />
-          <span>Built for Jamaica's Basic, Primary & Secondary Teachers</span>
+          <span>Built for Jamaica&apos;s Basic, Primary & Secondary Teachers</span>
         </div>
 
         {/* Headline */}
