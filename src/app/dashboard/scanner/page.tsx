@@ -73,20 +73,40 @@ export default function ScannerPage() {
                   How It Works
                 </h2>
                 <ol className="space-y-3 text-sm text-navy/75">
-                  {[
-                    'Click "Start Scanner" to access your camera',
-                    "Position the answer sheet flat and perpendicular to camera",
-                    "Scanner detects bubbles and shows real-time feedback",
-                    "✓ Green = Correct, ✕ Red = Incorrect",
-                    "Review results and submit for record-keeping",
-                  ].map((step, i) => (
-                    <li key={i} className="flex gap-3">
-                      <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-blue/15 text-xs font-bold text-sky-blue">
-                        {i + 1}
-                      </span>
-                      <span>{step}</span>
-                    </li>
-                  ))}
+                  <li className="flex gap-3">
+                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-blue/15 text-xs font-bold text-sky-blue">
+                      1
+                    </span>
+                    <span>Click &quot;Start Scanner&quot; to access your camera</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-blue/15 text-xs font-bold text-sky-blue">
+                      2
+                    </span>
+                    <span>
+                      Position the answer sheet flat and perpendicular to camera
+                    </span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-blue/15 text-xs font-bold text-sky-blue">
+                      3
+                    </span>
+                    <span>
+                      Scanner detects bubbles and shows real-time feedback
+                    </span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-blue/15 text-xs font-bold text-sky-blue">
+                      4
+                    </span>
+                    <span>✓ Green = Correct, ✕ Red = Incorrect</span>
+                  </li>
+                  <li className="flex gap-3">
+                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-blue/15 text-xs font-bold text-sky-blue">
+                      5
+                    </span>
+                    <span>Review results and submit for record-keeping</span>
+                  </li>
                 </ol>
               </div>
 
@@ -142,33 +162,59 @@ export default function ScannerPage() {
             <div className="rounded-3xl border border-dark-teal/10 bg-white/80 p-6 shadow-sm">
               <h2 className="mb-6 text-lg font-extrabold text-navy">FAQ</h2>
               <div className="space-y-6">
-                {[
-                  {
-                    q: "Will this work on my phone?",
-                    a: "Yes! The scanner works on iOS 14.5+ and Android 5.0+. For best results, use a device with a good rear-facing camera.",
-                  },
-                  {
-                    q: "What if the scanner doesn't detect bubbles?",
-                    a: "Check lighting, paper angle, and bubble clarity. Try tilting the paper slightly. Make sure bubbles are fully filled or empty (no partial marks).",
-                  },
-                  {
-                    q: "Can I correct detected answers?",
-                    a: 'Currently, the scanner shows live detection. You can reset and re-scan, or manually edit in the results panel before submitting.',
-                  },
-                  {
-                    q: "Is my camera feed stored or recorded?",
-                    a: "No. The camera feed is processed locally on your device and never transmitted to our servers. Only the detected answers are submitted.",
-                  },
-                  {
-                    q: "How accurate is the detection?",
-                    a: "Accuracy depends on paper quality, lighting, and bubble clarity. With ideal conditions, detection accuracy is typically 98%+. Always review results before final submission.",
-                  },
-                ].map(({ q, a }, i) => (
-                  <div key={i}>
-                    <h3 className="font-semibold text-navy">{q}</h3>
-                    <p className="mt-2 text-sm text-navy/70">{a}</p>
-                  </div>
-                ))}
+                <div>
+                  <h3 className="font-semibold text-navy">
+                    Will this work on my phone?
+                  </h3>
+                  <p className="mt-2 text-sm text-navy/70">
+                    Yes! The scanner works on iOS 14.5+ and Android 5.0+. For best
+                    results, use a device with a good rear-facing camera.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-navy">
+                    What if the scanner doesn&apos;t detect bubbles?
+                  </h3>
+                  <p className="mt-2 text-sm text-navy/70">
+                    Check lighting, paper angle, and bubble clarity. Try tilting
+                    the paper slightly. Make sure bubbles are fully filled or empty
+                    (no partial marks).
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-navy">
+                    Can I correct detected answers?
+                  </h3>
+                  <p className="mt-2 text-sm text-navy/70">
+                    Currently, the scanner shows live detection. You can reset and
+                    re-scan, or manually edit in the results panel before
+                    submitting.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-navy">
+                    Is my camera feed stored or recorded?
+                  </h3>
+                  <p className="mt-2 text-sm text-navy/70">
+                    No. The camera feed is processed locally on your device and
+                    never transmitted to our servers. Only the detected answers are
+                    submitted.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-navy">
+                    How accurate is the detection?
+                  </h3>
+                  <p className="mt-2 text-sm text-navy/70">
+                    Accuracy depends on paper quality, lighting, and bubble
+                    clarity. With ideal conditions, detection accuracy is typically
+                    98%+. Always review results before final submission.
+                  </p>
+                </div>
               </div>
             </div>
           </div>

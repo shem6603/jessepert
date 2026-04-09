@@ -298,11 +298,7 @@ export function RealTimeMarkPaperScanner() {
           continue;
         }
 
-        const isFilled = isContourFilled(
-          contour,
-          binary,
-          OMR_CONFIG.fillThreshold
-        );
+        const isFilled = isContourFilled(contour, binary, OMR_CONFIG.fillThreshold);
 
         // Map pixel position → question/answer indices
         const rowIndex = Math.floor(
@@ -466,28 +462,40 @@ export function RealTimeMarkPaperScanner() {
      7. Main rAF processing loop
      ────────────────────────────────────────────────────────── */
   const startScanningLoop = useCallback(() => {
-    if (!isRunningRef.current || !videoRef.current) return;
+    const loop = () => {
+      if (!isRunningRef.current || !videoRef.current) return;
 
-    const frameStart = performance.now();
+      const frameStart = performance.now();
 
-    const results = processFrame();
+      // Process frame
+      const results = processFrame();
 
-    const correctCount = results.filter((r) => r.isCorrect === true).length;
-    const totalCount = results.filter((r) => r.isCorrect !== null).length;
-    const elapsed = performance.now() - frameStart;
+      // Update stats
+      const correctCount = results.filter((r) => r.isCorrect === true).length;
+      const totalCount = results.filter((r) => r.isCorrect !== null).length;
 
-    setStats({
-      fps: elapsed > 0 ? Math.round(1000 / elapsed) : 0,
-      bubblesDetected: results.length,
-      correctAnswers: correctCount,
-      totalAnswers: totalCount,
-    });
+      setStats({
+        fps: Math.round(1000 / (performance.now() - frameStart)),
+        bubblesDetected: results.length,
+        correctAnswers: correctCount,
+        totalAnswers: totalCount,
+      });
 
-    drawOverlays(results);
-    setBubbleResults(results);
+      // Draw overlays
+      drawOverlays(results);
 
-    // Schedule next frame
-    rafIdRef.current = requestAnimationFrame(startScanningLoop);
+      // Update results
+      setBubbleResults(results);
+
+      // Schedule next frame
+      rafIdRef.current = requestAnimationFrame(() => {
+        if (isRunningRef.current) {
+          loop();
+        }
+      });
+    };
+
+    loop();
   }, [processFrame, drawOverlays]);
 
   /* ──────────────────────────────────────────────────────────
@@ -526,13 +534,9 @@ export function RealTimeMarkPaperScanner() {
     setIsScanning(true);
     setError(null);
 
-    rafIdRef.current = requestAnimationFrame(startScanningLoop);
-  }, [
-    openCVLoaded,
-    cameraPermission,
-    requestCameraAccess,
-    startScanningLoop,
-  ]);
+    // Start the processing loop
+    rafIdRef.current = requestAnimationFrame(() => startScanningLoop());
+  }, [openCVLoaded, cameraPermission, requestCameraAccess, startScanningLoop]);
 
   /* ──────────────────────────────────────────────────────────
      9. Reset
