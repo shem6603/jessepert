@@ -12,9 +12,16 @@ type BubbleRect = { x: number; y: number; w: number; h: number };
 
 const CHOICES = ["A", "B", "C", "D"] as const;
 
+function isOpenCvReady(cv: unknown): cv is { Mat: unknown } {
+  return Boolean(
+    cv &&
+      typeof (cv as { Mat?: unknown }).Mat === "function",
+  );
+}
+
 async function loadOpenCvOnce() {
   if (typeof window === "undefined") return;
-  if (window.cv && typeof window.cv.Mat === "function") return;
+  if (isOpenCvReady(window.cv)) return;
 
   const existing = document.querySelector<HTMLScriptElement>(
     'script[data-opencv="true"]',
@@ -32,7 +39,7 @@ async function loadOpenCvOnce() {
   const timeoutMs = 15000;
   // Poll until OpenCV is ready (cv.Mat exists)
   while (true) {
-    if (window.cv && typeof window.cv.Mat === "function") return;
+    if (isOpenCvReady(window.cv)) return;
     if (performance.now() - start > timeoutMs) {
       throw new Error("Timed out waiting for OpenCV.js to initialize.");
     }
@@ -127,7 +134,6 @@ export default function RealTimeMarkPaperScanner() {
     const video = videoRef.current;
     if (video) {
       video.pause();
-      // @ts-expect-error srcObject exists
       video.srcObject = null;
     }
 
@@ -522,7 +528,6 @@ export default function RealTimeMarkPaperScanner() {
       const video = videoRef.current;
       if (!video) throw new Error("Video element not ready");
 
-      // @ts-expect-error srcObject exists
       video.srcObject = stream;
       video.playsInline = true;
       video.muted = true;
