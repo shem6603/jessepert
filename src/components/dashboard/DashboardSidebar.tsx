@@ -26,7 +26,6 @@ const navItems = [
     icon: ClipboardCheck,
     enabled: true,
   },
-  { href: "/dashboard/scanner", label: "Live Scanner", icon: ScanLine, enabled: true },
   { href: "/dashboard/history", label: "History", icon: History, enabled: false },
   { href: "/dashboard/classes", label: "Classes", icon: Users, enabled: false },
   { href: "/dashboard/settings", label: "Settings", icon: Settings, enabled: false },

@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardTopBar } from "@/components/dashboard/DashboardTopBar";
-import { MarkPaperUpload } from "@/components/dashboard/MarkPaperUpload";
+import { RealTimeMarkPaperScanner } from "@/components/RealTimeMarkPaperScanner";
 import LoginButton from "@/components/LoginButton";
 
 export default function DashboardPage() {
@@ -96,7 +96,7 @@ export default function DashboardPage() {
           <div className="mx-auto w-full max-w-6xl">
             <div className="grid gap-6 lg:grid-cols-[1fr,360px]">
               <div className="space-y-6">
-                <MarkPaperUpload />
+                <RealTimeMarkPaperScanner />
               </div>
 
               <aside className="space-y-4">
