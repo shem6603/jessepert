@@ -1,22 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Camera, StopCircle, RefreshCw, Check, X, Loader2 } from "lucide-react";
+import {
+  Camera,
+  StopCircle,
+  RefreshCw,
+  Check,
+  X,
+  Loader2,
+  Scan,
+  ImageIcon,
+} from "lucide-react";
 
 /* ────────────────────────────────────────────────────────────
-   Type declarations for the globally-loaded OpenCV.js
+   Answer key – in production this would come from props / backend
    ──────────────────────────────────────────────────────────── */
-declare global {
-  interface Window {
-    cv: any;
-    Module: any;
-  }
-}
 
-/**
- * Mock answer key for OMR scanning.
- * In production this would come from the backend or as a prop.
- */
 const MOCK_ANSWER_KEY: Record<string, string> = {
   q1: "a",
   q2: "b",
@@ -25,32 +24,23 @@ const MOCK_ANSWER_KEY: Record<string, string> = {
   q5: "a",
 };
 
-/**
- * Tuning knobs for bubble detection.
- */
-const OMR_CONFIG = {
-  minBubbleArea: 50,
-  maxBubbleArea: 5000,
-  fillThreshold: 0.4,
-  bubbleRowGap: 20,
-  bubbleColGap: 15,
-};
+/* ── Interfaces ── */
 
-/* ────── Interfaces ────── */
-
-interface BubbleResult {
-  id: string;
+interface GradedResult {
+  questionId: string;
+  questionNumber: number;
   expectedAnswer: string;
   detectedAnswer: string | null;
   isCorrect: boolean | null;
-  bounds: { x: number; y: number; width: number; height: number };
+  confidence: number;
 }
 
-interface ScannerStats {
-  fps: number;
-  bubblesDetected: number;
-  correctAnswers: number;
-  totalAnswers: number;
+interface ScanSummary {
+  totalDetected: number;
+  totalGraded: number;
+  correctCount: number;
+  incorrectCount: number;
+  score: number;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -60,70 +50,27 @@ interface ScannerStats {
 export function RealTimeMarkPaperScanner() {
   /* ── refs ── */
   const videoRef = useRef<HTMLVideoElement>(null);
-  const displayCanvasRef = useRef<HTMLCanvasElement>(null);
-  const processingCanvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const rafIdRef = useRef<number | null>(null);
-  const isRunningRef = useRef(false);
 
   /* ── state ── */
-  const [isScanning, setIsScanning] = useState(false);
+  const [cameraActive, setCameraActive] = useState(false);
   const [cameraPermission, setCameraPermission] = useState<
     "pending" | "granted" | "denied"
   >("pending");
   const [error, setError] = useState<string | null>(null);
-  const [bubbleResults, setBubbleResults] = useState<BubbleResult[]>([]);
-  const [stats, setStats] = useState<ScannerStats>({
-    fps: 0,
-    bubblesDetected: 0,
-    correctAnswers: 0,
-    totalAnswers: 0,
-  });
-  const [openCVLoaded, setOpenCVLoaded] = useState(false);
-  const [openCVLoading, setOpenCVLoading] = useState(true);
+
+  // Capture & analysis
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Results
+  const [results, setResults] = useState<GradedResult[]>([]);
+  const [summary, setSummary] = useState<ScanSummary | null>(null);
+  const [notes, setNotes] = useState<string | null>(null);
 
   /* ──────────────────────────────────────────────────────────
-     1. Load OpenCV.js dynamically (WASM runtime)
-     ────────────────────────────────────────────────────────── */
-  useEffect(() => {
-    // If OpenCV is already loaded (e.g. HMR), skip.
-    if (window.cv && window.cv.Mat) {
-      setOpenCVLoaded(true);
-      setOpenCVLoading(false);
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.src =
-      "https://docs.opencv.org/4.7.0/opencv.js";
-    script.async = true;
-
-    // OpenCV.js invokes Module.onRuntimeInitialized when WASM is ready.
-    window.Module = {
-      onRuntimeInitialized: () => {
-        setOpenCVLoaded(true);
-        setOpenCVLoading(false);
-      },
-    };
-
-    script.onerror = () => {
-      setError(
-        "Failed to load OpenCV.js. Computer vision features are unavailable."
-      );
-      setOpenCVLoading(false);
-    };
-
-    document.head.appendChild(script);
-
-    return () => {
-      if (document.head.contains(script)) {
-        document.head.removeChild(script);
-      }
-    };
-  }, []);
-
-  /* ──────────────────────────────────────────────────────────
-     2. Request camera access (rear-facing preferred)
+     1. Request camera access (rear-facing preferred)
      ────────────────────────────────────────────────────────── */
   const requestCameraAccess = useCallback(async () => {
     try {
@@ -152,6 +99,7 @@ export function RealTimeMarkPaperScanner() {
       }
 
       setCameraPermission("granted");
+      setCameraActive(true);
     } catch (err) {
       const errorMsg =
         err instanceof DOMException ? err.message : "Unknown camera error";
@@ -161,16 +109,10 @@ export function RealTimeMarkPaperScanner() {
   }, []);
 
   /* ──────────────────────────────────────────────────────────
-     3. Stop / Cleanup
+     2. Stop camera
      ────────────────────────────────────────────────────────── */
-  const stopScanning = useCallback(() => {
-    isRunningRef.current = false;
-    setIsScanning(false);
-
-    if (rafIdRef.current) {
-      cancelAnimationFrame(rafIdRef.current);
-      rafIdRef.current = null;
-    }
+  const stopCamera = useCallback(() => {
+    setCameraActive(false);
 
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
@@ -180,380 +122,97 @@ export function RealTimeMarkPaperScanner() {
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
-
-    // Clear the overlay canvas
-    if (displayCanvasRef.current) {
-      const ctx = displayCanvasRef.current.getContext("2d");
-      ctx?.clearRect(
-        0,
-        0,
-        displayCanvasRef.current.width,
-        displayCanvasRef.current.height
-      );
-    }
   }, []);
 
   /* ──────────────────────────────────────────────────────────
-     4. Helper: check if a contour is filled
+     3. Capture frame from video
      ────────────────────────────────────────────────────────── */
-  const isContourFilled = useCallback(
-    (contour: any, mask: any, fillThreshold: number): boolean => {
-      const cv = window.cv;
-      const area = cv.contourArea(contour);
-      const rect = cv.boundingRect(contour);
+  const captureFrame = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) return null;
 
-      if (area === 0 || rect.width === 0 || rect.height === 0) return false;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const vw = video.videoWidth;
+    const vh = video.videoHeight;
 
-      // Clamp roi to image bounds
-      const clampedX = Math.max(0, rect.x);
-      const clampedY = Math.max(0, rect.y);
-      const clampedW = Math.min(rect.width, mask.cols - clampedX);
-      const clampedH = Math.min(rect.height, mask.rows - clampedY);
+    if (vw === 0 || vh === 0) return null;
 
-      if (clampedW <= 0 || clampedH <= 0) return false;
+    canvas.width = vw;
+    canvas.height = vh;
 
-      const roiRect = new cv.Rect(clampedX, clampedY, clampedW, clampedH);
-      const roiMask = mask.roi(roiRect);
-      const nonZero = cv.countNonZero(roiMask);
-      const fillPercentage = nonZero / (clampedW * clampedH);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
 
-      roiMask.delete();
-      return fillPercentage >= fillThreshold;
-    },
-    []
-  );
+    ctx.drawImage(video, 0, 0, vw, vh);
 
-  /* ──────────────────────────────────────────────────────────
-     5. Process a single frame for OMR detection
-     ────────────────────────────────────────────────────────── */
-  const processFrame = useCallback((): BubbleResult[] => {
-    if (
-      !videoRef.current ||
-      !processingCanvasRef.current ||
-      !window.cv ||
-      !window.cv.Mat
-    )
-      return [];
-
-    const cv = window.cv;
-
-    try {
-      const ctx = processingCanvasRef.current.getContext("2d");
-      if (!ctx) return [];
-
-      const vw = videoRef.current.videoWidth;
-      const vh = videoRef.current.videoHeight;
-      if (vw === 0 || vh === 0) return [];
-
-      processingCanvasRef.current.width = vw;
-      processingCanvasRef.current.height = vh;
-
-      // Draw video frame to the hidden processing canvas
-      ctx.drawImage(videoRef.current, 0, 0, vw, vh);
-
-      const imageData = ctx.getImageData(0, 0, vw, vh);
-      const src = cv.matFromImageData(imageData);
-      const gray = new cv.Mat();
-      const binary = new cv.Mat();
-
-      // Convert to grayscale
-      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY);
-
-      // Apply Gaussian blur to reduce noise
-      const kSize = new cv.Size(5, 5);
-      cv.GaussianBlur(gray, gray, kSize, 0);
-
-      // Binary threshold (invert so bubbles are white)
-      cv.threshold(gray, binary, 127, 255, cv.THRESH_BINARY_INV);
-
-      // Find contours
-      const contours = new cv.MatVector();
-      const hierarchy = new cv.Mat();
-      cv.findContours(
-        binary,
-        contours,
-        hierarchy,
-        cv.RETR_EXTERNAL,
-        cv.CHAIN_APPROX_SIMPLE
-      );
-
-      const results: BubbleResult[] = [];
-      const answerLabels = ["a", "b", "c", "d"];
-
-      for (let i = 0; i < contours.size(); i++) {
-        const contour = contours.get(i);
-        const area = cv.contourArea(contour);
-
-        if (area < OMR_CONFIG.minBubbleArea || area > OMR_CONFIG.maxBubbleArea) {
-          contour.delete();
-          continue;
-        }
-
-        const rect = cv.boundingRect(contour);
-        const aspectRatio = rect.width / rect.height;
-
-        // Roughly circular / square contours only
-        if (aspectRatio < 0.7 || aspectRatio > 1.3) {
-          contour.delete();
-          continue;
-        }
-
-        const isFilled = isContourFilled(contour, binary, OMR_CONFIG.fillThreshold);
-
-        // Map pixel position → question/answer indices
-        const rowIndex = Math.floor(
-          rect.y / (rect.height + OMR_CONFIG.bubbleRowGap)
-        );
-        const colIndex = Math.floor(
-          rect.x / (rect.width + OMR_CONFIG.bubbleColGap)
-        );
-
-        const questionId = `q${rowIndex + 1}`;
-        const detectedAnswer = answerLabels[colIndex] ?? null;
-        const expectedAnswer = MOCK_ANSWER_KEY[questionId] ?? null;
-
-        if (detectedAnswer && expectedAnswer) {
-          const isCorrect = isFilled
-            ? detectedAnswer === expectedAnswer
-            : null;
-
-          results.push({
-            id: `${questionId}-${detectedAnswer}`,
-            expectedAnswer,
-            detectedAnswer: isFilled ? detectedAnswer : null,
-            isCorrect: isFilled ? isCorrect : null,
-            bounds: {
-              x: rect.x,
-              y: rect.y,
-              width: rect.width,
-              height: rect.height,
-            },
-          });
-        }
-
-        contour.delete();
-      }
-
-      // Cleanup OpenCV mats
-      contours.delete();
-      hierarchy.delete();
-      src.delete();
-      gray.delete();
-      binary.delete();
-
-      return results;
-    } catch (err) {
-      console.error("Frame processing error:", err);
-      return [];
-    }
-  }, [isContourFilled]);
-
-  /* ──────────────────────────────────────────────────────────
-     6. Draw AR overlays on the visible canvas
-     ────────────────────────────────────────────────────────── */
-  const drawOverlays = useCallback((results: BubbleResult[]) => {
-    if (!displayCanvasRef.current || !videoRef.current) return;
-
-    const ctx = displayCanvasRef.current.getContext("2d");
-    if (!ctx) return;
-
-    const vw = videoRef.current.videoWidth;
-    const vh = videoRef.current.videoHeight;
-
-    displayCanvasRef.current.width = vw;
-    displayCanvasRef.current.height = vh;
-
-    ctx.clearRect(0, 0, vw, vh);
-
-    // Draw a subtle scan-line animation
-    const time = Date.now() / 1000;
-    const scanLineY = ((time * 80) % vh);
-    const gradient = ctx.createLinearGradient(0, scanLineY - 30, 0, scanLineY + 30);
-    gradient.addColorStop(0, "rgba(14, 165, 233, 0)");
-    gradient.addColorStop(0.5, "rgba(14, 165, 233, 0.15)");
-    gradient.addColorStop(1, "rgba(14, 165, 233, 0)");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, scanLineY - 30, vw, 60);
-
-    results.forEach((result) => {
-      const { bounds, isCorrect } = result;
-
-      // Pick color
-      const strokeColor =
-        isCorrect === true
-          ? "#22c55e"
-          : isCorrect === false
-          ? "#ef4444"
-          : "#64748b";
-
-      const fillColor =
-        isCorrect === true
-          ? "rgba(34, 197, 94, 0.18)"
-          : isCorrect === false
-          ? "rgba(239, 68, 68, 0.18)"
-          : "rgba(100, 114, 139, 0.10)";
-
-      // Bounding box
-      ctx.fillStyle = fillColor;
-      ctx.fillRect(bounds.x, bounds.y, bounds.width, bounds.height);
-
-      ctx.strokeStyle = strokeColor;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(bounds.x, bounds.y, bounds.width, bounds.height);
-
-      // Corner accents for visual polish
-      const cornerLen = Math.min(bounds.width, bounds.height) * 0.25;
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = strokeColor;
-
-      // Top-left
-      ctx.beginPath();
-      ctx.moveTo(bounds.x, bounds.y + cornerLen);
-      ctx.lineTo(bounds.x, bounds.y);
-      ctx.lineTo(bounds.x + cornerLen, bounds.y);
-      ctx.stroke();
-
-      // Top-right
-      ctx.beginPath();
-      ctx.moveTo(bounds.x + bounds.width - cornerLen, bounds.y);
-      ctx.lineTo(bounds.x + bounds.width, bounds.y);
-      ctx.lineTo(bounds.x + bounds.width, bounds.y + cornerLen);
-      ctx.stroke();
-
-      // Bottom-left
-      ctx.beginPath();
-      ctx.moveTo(bounds.x, bounds.y + bounds.height - cornerLen);
-      ctx.lineTo(bounds.x, bounds.y + bounds.height);
-      ctx.lineTo(bounds.x + cornerLen, bounds.y + bounds.height);
-      ctx.stroke();
-
-      // Bottom-right
-      ctx.beginPath();
-      ctx.moveTo(
-        bounds.x + bounds.width - cornerLen,
-        bounds.y + bounds.height
-      );
-      ctx.lineTo(bounds.x + bounds.width, bounds.y + bounds.height);
-      ctx.lineTo(
-        bounds.x + bounds.width,
-        bounds.y + bounds.height - cornerLen
-      );
-      ctx.stroke();
-
-      // Check / X icon in the center
-      const centerX = bounds.x + bounds.width / 2;
-      const centerY = bounds.y + bounds.height / 2;
-      const iconSize = Math.min(bounds.width, bounds.height) * 0.5;
-
-      ctx.fillStyle = strokeColor;
-      ctx.font = `bold ${iconSize}px Arial`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-
-      if (isCorrect === true) {
-        ctx.fillText("✓", centerX, centerY);
-      } else if (isCorrect === false) {
-        ctx.fillText("✕", centerX, centerY);
-      }
-    });
+    // Convert to JPEG base64
+    return canvas.toDataURL("image/jpeg", 0.85);
   }, []);
 
   /* ──────────────────────────────────────────────────────────
-     7. Main rAF processing loop
+     4. Capture & Analyze with Gemini Vision
      ────────────────────────────────────────────────────────── */
-  const startScanningLoop = useCallback(() => {
-    const loop = () => {
-      if (!isRunningRef.current || !videoRef.current) return;
+  const handleCaptureAndAnalyze = useCallback(async () => {
+    setError(null);
 
-      const frameStart = performance.now();
-
-      // Process frame
-      const results = processFrame();
-
-      // Update stats
-      const correctCount = results.filter((r) => r.isCorrect === true).length;
-      const totalCount = results.filter((r) => r.isCorrect !== null).length;
-
-      setStats({
-        fps: Math.round(1000 / (performance.now() - frameStart)),
-        bubblesDetected: results.length,
-        correctAnswers: correctCount,
-        totalAnswers: totalCount,
-      });
-
-      // Draw overlays
-      drawOverlays(results);
-
-      // Update results
-      setBubbleResults(results);
-
-      // Schedule next frame
-      rafIdRef.current = requestAnimationFrame(() => {
-        if (isRunningRef.current) {
-          loop();
-        }
-      });
-    };
-
-    loop();
-  }, [processFrame, drawOverlays]);
-
-  /* ──────────────────────────────────────────────────────────
-     8. Start scanner
-     ────────────────────────────────────────────────────────── */
-  const handleStartScanner = useCallback(async () => {
-    if (!openCVLoaded) {
-      setError("OpenCV.js is still loading. Please wait…");
+    // Capture frame
+    const imageData = captureFrame();
+    if (!imageData) {
+      setError("Failed to capture frame. Make sure camera is active.");
       return;
     }
 
-    if (cameraPermission !== "granted") {
-      await requestCameraAccess();
-    }
+    setCapturedImage(imageData);
+    setIsAnalyzing(true);
+    setResults([]);
+    setSummary(null);
+    setNotes(null);
 
-    // Wait for the video element to be ready
-    const waitForVideo = () =>
-      new Promise<void>((resolve) => {
-        const check = () => {
-          if (videoRef.current && videoRef.current.readyState >= 2) {
-            resolve();
-          } else {
-            requestAnimationFrame(check);
-          }
-        };
-        check();
+    try {
+      const response = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image: imageData,
+          answerKey: MOCK_ANSWER_KEY,
+        }),
       });
 
-    // If camera was just granted, need to wait for stream
-    if (!streamRef.current) {
-      await requestCameraAccess();
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Analysis failed. Please try again.");
+        return;
+      }
+
+      setResults(data.results ?? []);
+      setSummary(data.summary ?? null);
+      setNotes(data.notes ?? null);
+    } catch (err) {
+      console.error("Analysis error:", err);
+      setError("Network error. Make sure the server is running.");
+    } finally {
+      setIsAnalyzing(false);
     }
-    await waitForVideo();
-
-    isRunningRef.current = true;
-    setIsScanning(true);
-    setError(null);
-
-    // Start the processing loop
-    rafIdRef.current = requestAnimationFrame(() => startScanningLoop());
-  }, [openCVLoaded, cameraPermission, requestCameraAccess, startScanningLoop]);
+  }, [captureFrame]);
 
   /* ──────────────────────────────────────────────────────────
-     9. Reset
+     5. Reset everything
      ────────────────────────────────────────────────────────── */
   const handleReset = useCallback(() => {
-    stopScanning();
-    setBubbleResults([]);
-    setStats({ fps: 0, bubblesDetected: 0, correctAnswers: 0, totalAnswers: 0 });
-  }, [stopScanning]);
+    setCapturedImage(null);
+    setResults([]);
+    setSummary(null);
+    setNotes(null);
+    setError(null);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      stopScanning();
+      stopCamera();
     };
-  }, [stopScanning]);
+  }, [stopCamera]);
 
   /* ═══════════════════════════════════════════════════════════
      RENDER
@@ -570,36 +229,22 @@ export function RealTimeMarkPaperScanner() {
             id="scanner-heading"
             className="text-xl font-extrabold tracking-tight text-navy sm:text-2xl"
           >
-            Real-Time Mark Paper Scanner
+            AI-Powered Mark Paper Scanner
           </h2>
           <p className="text-sm text-navy/65">
-            Point your camera at a multiple-choice answer sheet. The scanner
-            will detect bubbles in real-time and compare them against the
-            answer key.
+            Point your camera at a multiple-choice answer sheet, capture a
+            photo, and let Gemini Vision AI detect and grade the answers
+            instantly.
           </p>
         </div>
 
-        {/* ── OpenCV status ── */}
+        {/* ── Gemini status ── */}
         <div className="flex items-center gap-2 text-sm">
-          {openCVLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin text-sky-blue" />
-              <span className="text-navy/70">Loading computer vision engine…</span>
-            </>
-          ) : openCVLoaded ? (
-            <>
-              <div className="h-2 w-2 rounded-full bg-green-500" />
-              <span className="text-navy/70">Computer vision ready</span>
-            </>
-          ) : (
-            <>
-              <div className="h-2 w-2 rounded-full bg-red-500" />
-              <span className="text-red-600">Computer vision failed to load</span>
-            </>
-          )}
+          <div className="h-2 w-2 rounded-full bg-green-500" />
+          <span className="text-navy/70">Gemini Vision AI ready</span>
         </div>
 
-        {/* ── Camera feed container ── */}
+        {/* ── Camera feed / Captured image ── */}
         <div className="relative w-full overflow-hidden rounded-2xl border border-dark-teal/10 bg-navy/5">
           {cameraPermission !== "granted" ? (
             <div className="flex h-80 flex-col items-center justify-center gap-4 bg-soft-teal/30 sm:h-96">
@@ -620,50 +265,62 @@ export function RealTimeMarkPaperScanner() {
             </div>
           ) : (
             <>
-              {/* Base video element */}
+              {/* Live video feed */}
               <video
                 ref={videoRef}
-                className="block w-full"
+                className={`block w-full ${capturedImage ? "hidden" : ""}`}
                 playsInline
                 muted
                 autoPlay
               />
 
-              {/* Hidden processing canvas */}
-              <canvas ref={processingCanvasRef} className="hidden" />
+              {/* Hidden canvas for frame capture */}
+              <canvas ref={canvasRef} className="hidden" />
 
-              {/* AR overlay canvas */}
-              <canvas
-                ref={displayCanvasRef}
-                className="pointer-events-none absolute inset-0 h-full w-full"
-              />
+              {/* Captured image preview */}
+              {capturedImage && (
+                <div className="relative">
+                  <img
+                    src={capturedImage}
+                    alt="Captured answer sheet"
+                    className="block w-full"
+                  />
 
-              {/* Live stats HUD */}
-              {isScanning && (
+                  {/* Analysing overlay */}
+                  {isAnalyzing && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
+                      <div className="flex flex-col items-center gap-3 rounded-2xl bg-black/60 px-6 py-5 backdrop-blur-md">
+                        <Loader2 className="h-8 w-8 animate-spin text-sky-blue" />
+                        <p className="text-sm font-semibold text-white">
+                          Gemini Vision is analyzing…
+                        </p>
+                        <p className="text-xs text-white/60">
+                          Detecting bubbles and grading answers
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Live HUD when camera is active and no capture */}
+              {cameraActive && !capturedImage && (
                 <div className="absolute right-3 top-3 space-y-1 rounded-xl bg-black/60 px-3 py-2 backdrop-blur-md">
                   <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
                     <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-green-400" />
                     LIVE
                   </div>
                   <div className="text-xs text-white/80">
-                    FPS: {stats.fps}
+                    Aim at answer sheet
                   </div>
-                  <div className="text-xs text-white/80">
-                    Bubbles: {stats.bubblesDetected}
-                  </div>
-                  {stats.totalAnswers > 0 && (
-                    <div className="text-xs text-white/80">
-                      Score: {stats.correctAnswers}/{stats.totalAnswers}
-                    </div>
-                  )}
                 </div>
               )}
 
-              {/* Scanning indicator when not scanning yet */}
-              {!isScanning && cameraPermission === "granted" && (
+              {/* Prompt when camera is ready but not yet captured */}
+              {!cameraActive && cameraPermission === "granted" && !capturedImage && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                   <p className="rounded-xl bg-black/50 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
-                    Press &quot;Start Scanner&quot; to begin real-time detection
+                    Press &quot;Start Camera&quot; to begin
                   </p>
                 </div>
               )}
@@ -680,31 +337,47 @@ export function RealTimeMarkPaperScanner() {
 
         {/* ── Controls ── */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          {!isScanning ? (
+          {/* Start / Stop camera */}
+          {!cameraActive ? (
             <button
               type="button"
-              onClick={handleStartScanner}
-              disabled={!openCVLoaded}
-              className={`touch-manipulation inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-6 py-2.5 text-sm font-extrabold transition sm:px-8 ${
-                openCVLoaded
-                  ? "bg-sky-blue text-white shadow-lg shadow-sky-blue/25 hover:bg-sky-blue/90 active:scale-[0.99]"
-                  : "cursor-not-allowed bg-navy/10 text-navy/40"
-              }`}
+              onClick={requestCameraAccess}
+              className="touch-manipulation inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-sky-blue px-6 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-sky-blue/25 transition hover:bg-sky-blue/90 active:scale-[0.99] sm:px-8"
             >
               <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
-              Start Scanner
+              Start Camera
             </button>
           ) : (
             <button
               type="button"
-              onClick={stopScanning}
+              onClick={stopCamera}
               className="touch-manipulation inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-red-500 px-6 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-red-500/25 transition hover:bg-red-600 active:scale-[0.99] sm:px-8"
             >
               <StopCircle className="h-4 w-4 sm:h-5 sm:w-5" />
-              Stop Scanner
+              Stop Camera
             </button>
           )}
 
+          {/* Capture & Analyse */}
+          <button
+            type="button"
+            onClick={handleCaptureAndAnalyze}
+            disabled={!cameraActive || isAnalyzing}
+            className={`touch-manipulation inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-6 py-2.5 text-sm font-extrabold transition sm:px-8 ${
+              cameraActive && !isAnalyzing
+                ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/25 hover:bg-emerald-600 active:scale-[0.99]"
+                : "cursor-not-allowed bg-navy/10 text-navy/40"
+            }`}
+          >
+            {isAnalyzing ? (
+              <Loader2 className="h-4 w-4 animate-spin sm:h-5 sm:w-5" />
+            ) : (
+              <Scan className="h-4 w-4 sm:h-5 sm:w-5" />
+            )}
+            {isAnalyzing ? "Analyzing…" : "Capture & Analyze"}
+          </button>
+
+          {/* Reset */}
           <button
             type="button"
             onClick={handleReset}
@@ -716,55 +389,77 @@ export function RealTimeMarkPaperScanner() {
         </div>
 
         {/* ── Results summary ── */}
-        {bubbleResults.length > 0 && (
+        {summary && (
           <div className="space-y-4 rounded-2xl border border-dark-teal/10 bg-soft-teal/30 p-4">
-            <h3 className="text-sm font-extrabold text-navy">Scan Results</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-extrabold text-navy">
+                Scan Results
+              </h3>
+              {summary.score > 0 && (
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${
+                    summary.score >= 80
+                      ? "bg-green-100 text-green-700"
+                      : summary.score >= 50
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-red-100 text-red-700"
+                  }`}
+                >
+                  {summary.score}%
+                </span>
+              )}
+            </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="rounded-xl bg-white/70 p-3">
-                <p className="text-xs text-navy/60">Total Bubbles</p>
+                <p className="text-xs text-navy/60">Total Detected</p>
                 <p className="text-lg font-bold text-navy">
-                  {bubbleResults.length}
+                  {summary.totalDetected}
                 </p>
               </div>
 
               <div className="rounded-xl bg-white/70 p-3">
-                <p className="text-xs text-navy/60">Detected Answers</p>
+                <p className="text-xs text-navy/60">Graded</p>
                 <p className="text-lg font-bold text-navy">
-                  {bubbleResults.filter((r) => r.detectedAnswer).length}
+                  {summary.totalGraded}
                 </p>
               </div>
 
               <div className="rounded-xl bg-green-50 p-3">
                 <p className="text-xs text-green-700">Correct</p>
                 <p className="text-lg font-bold text-green-600">
-                  {stats.correctAnswers}
+                  {summary.correctCount}
                 </p>
               </div>
 
               <div className="rounded-xl bg-red-50 p-3">
                 <p className="text-xs text-red-700">Incorrect</p>
                 <p className="text-lg font-bold text-red-600">
-                  {stats.totalAnswers - stats.correctAnswers}
+                  {summary.incorrectCount}
                 </p>
               </div>
             </div>
 
             {/* Per-question breakdown */}
             <div className="space-y-2">
-              {bubbleResults
+              {results
                 .filter((r) => r.detectedAnswer)
                 .map((result) => (
                   <div
-                    key={result.id}
+                    key={result.questionId}
                     className="flex items-center justify-between rounded-lg bg-white/60 p-2.5 text-sm"
                   >
                     <div>
                       <p className="font-semibold text-navy">
-                        {result.id.split("-")[0].toUpperCase()}{" "}
+                        Q{result.questionNumber}{" "}
                         <span className="text-sky-blue">
                           {result.detectedAnswer?.toUpperCase()}
                         </span>
+                        {result.confidence < 1 && (
+                          <span className="ml-2 text-xs text-navy/40">
+                            {Math.round(result.confidence * 100)}% conf
+                          </span>
+                        )}
                       </p>
                       <p className="text-xs text-navy/60">
                         Expected: {result.expectedAnswer?.toUpperCase()}
@@ -782,6 +477,14 @@ export function RealTimeMarkPaperScanner() {
                   </div>
                 ))}
             </div>
+
+            {/* AI notes */}
+            {notes && (
+              <div className="rounded-lg bg-sky-blue/5 p-3 text-xs text-navy/70">
+                <span className="font-semibold text-navy">AI Notes:</span>{" "}
+                {notes}
+              </div>
+            )}
           </div>
         )}
 
@@ -811,7 +514,7 @@ export function RealTimeMarkPaperScanner() {
             <li>• Position the camera perpendicular to the page</li>
             <li>• Ensure all bubbles are clearly visible</li>
             <li>• Avoid shadows and glare on the page</li>
-            <li>• Use a standard OMR bubble sheet for best detection</li>
+            <li>• Hold steady before pressing &quot;Capture &amp; Analyze&quot;</li>
           </ul>
         </div>
       </div>

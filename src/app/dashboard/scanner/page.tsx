@@ -41,11 +41,11 @@ export default function ScannerPage() {
             {/* Page header */}
             <div className="space-y-2">
               <h1 className="text-2xl font-extrabold text-navy sm:text-3xl">
-                Real-Time OMR Scanner
+                AI-Powered OMR Scanner
               </h1>
               <p className="text-sm text-navy/65">
-                Advanced AI-powered optical mark recognition for instant
-                grading
+                Powered by Gemini Vision AI for instant, accurate optical mark
+                recognition and grading
               </p>
             </div>
 
@@ -53,11 +53,12 @@ export default function ScannerPage() {
             <div className="flex gap-3 rounded-2xl border border-sky-blue/20 bg-sky-blue/5 p-4">
               <Info className="h-5 w-5 shrink-0 text-sky-blue" />
               <div className="text-sm text-navy/75">
-                <p className="font-medium text-navy">New Feature!</p>
+                <p className="font-medium text-navy">Gemini Vision AI</p>
                 <p className="mt-1">
-                  Point your camera at a multiple-choice answer sheet for
-                  instant, real-time feedback. Perfect for marking papers in
-                  the classroom or remotely.
+                  Point your camera at a multiple-choice answer sheet, capture
+                  a photo, and let Google&apos;s Gemini AI detect and grade
+                  answers instantly. Perfect for marking papers in the
+                  classroom or remotely.
                 </p>
               </div>
             </div>
@@ -77,7 +78,7 @@ export default function ScannerPage() {
                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-blue/15 text-xs font-bold text-sky-blue">
                       1
                     </span>
-                    <span>Click &quot;Start Scanner&quot; to access your camera</span>
+                    <span>Click &quot;Start Camera&quot; to access your camera</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-blue/15 text-xs font-bold text-sky-blue">
@@ -92,20 +93,20 @@ export default function ScannerPage() {
                       3
                     </span>
                     <span>
-                      Scanner detects bubbles and shows real-time feedback
+                      Press &quot;Capture &amp; Analyze&quot; to snap a photo
                     </span>
                   </li>
                   <li className="flex gap-3">
                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-blue/15 text-xs font-bold text-sky-blue">
                       4
                     </span>
-                    <span>✓ Green = Correct, ✕ Red = Incorrect</span>
+                    <span>Gemini Vision AI detects bubbles and grades answers</span>
                   </li>
                   <li className="flex gap-3">
                     <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sky-blue/15 text-xs font-bold text-sky-blue">
                       5
                     </span>
-                    <span>Review results and submit for record-keeping</span>
+                    <span>Review results – ✓ Green = Correct, ✕ Red = Incorrect</span>
                   </li>
                 </ol>
               </div>
@@ -150,10 +151,10 @@ export default function ScannerPage() {
               <div className="text-sm text-amber-900">
                 <p className="font-medium">Note:</p>
                 <p className="mt-1">
-                  Scanner works best with standard OMR bubble sheets (CSEC,
-                  PEP, CAPE formats). Ensure good lighting and clear bubble
-                  marks for optimal accuracy. Complex layouts or handwritten
-                  notes may affect detection.
+                  Gemini Vision AI works best with standard OMR bubble sheets
+                  (CSEC, PEP, CAPE formats). Ensure good lighting and clear
+                  bubble marks for optimal accuracy. Images are sent to the
+                  Gemini API for analysis.
                 </p>
               </div>
             </div>
@@ -196,12 +197,13 @@ export default function ScannerPage() {
 
                 <div>
                   <h3 className="font-semibold text-navy">
-                    Is my camera feed stored or recorded?
+                    Is my data private?
                   </h3>
                   <p className="mt-2 text-sm text-navy/70">
-                    No. The camera feed is processed locally on your device and
-                    never transmitted to our servers. Only the detected answers are
-                    submitted.
+                    When you press &quot;Capture &amp; Analyze&quot;, the captured image
+                    is sent to Google&apos;s Gemini Vision API for analysis.
+                    The image is not stored permanently. Only the detected
+                    answers are saved for your records.
                   </p>
                 </div>
 
@@ -210,9 +212,9 @@ export default function ScannerPage() {
                     How accurate is the detection?
                   </h3>
                   <p className="mt-2 text-sm text-navy/70">
-                    Accuracy depends on paper quality, lighting, and bubble
-                    clarity. With ideal conditions, detection accuracy is typically
-                    98%+. Always review results before final submission.
+                    Gemini Vision AI provides high accuracy for well-lit, clear
+                    answer sheets. Each detected answer includes a confidence
+                    score. Always review results before final submission.
                   </p>
                 </div>
               </div>
