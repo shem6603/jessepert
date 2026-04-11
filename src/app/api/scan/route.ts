@@ -3,7 +3,8 @@ import { NextRequest } from "next/server";
 /* ────────────────────────────────────────────────────────────
    POST /api/scan
    Accepts { image: string (base64 JPEG), answerKey: Record<string,string> }
-   Sends image to Gemini Vision and returns graded results.
+   Sends image to Gemini Vision, detects answers, grades them.
+   Returns per-question results with correct/incorrect status.
    ──────────────────────────────────────────────────────────── */
 
 const GEMINI_ENDPOINT =
@@ -12,15 +13,6 @@ const GEMINI_ENDPOINT =
 interface DetectedQuestion {
   questionNumber: number;
   detectedAnswer: string | null;
-  confidence: number;
-}
-
-interface GradedResult {
-  questionId: string;
-  questionNumber: number;
-  expectedAnswer: string;
-  detectedAnswer: string | null;
-  isCorrect: boolean | null;
   confidence: number;
 }
 
@@ -54,35 +46,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Strip the data URL prefix if present (e.g. "data:image/jpeg;base64,")
+    // Strip the data URL prefix if present
     const base64Data = image.includes(",") ? image.split(",")[1] : image;
-
     const totalQuestions = Object.keys(answerKey).length;
 
-    // Build the Gemini prompt
-    const prompt = `You are an expert Optical Mark Recognition (OMR) system. Analyze this image of a multiple-choice answer sheet.
+    const prompt = `You are an expert OMR (Optical Mark Recognition) system. Analyze this image of a multiple-choice answer sheet.
 
-Detect which bubbles are filled in for each question. The answer sheet may contain up to ${totalQuestions} questions, each with options labeled A, B, C, D (and possibly E).
+Detect which bubbles are filled for each question. There may be up to ${totalQuestions} questions with options A, B, C, D (possibly E).
 
-Return your analysis as a JSON object with this exact structure (no markdown, no code fences, just raw JSON):
+Return ONLY a JSON object with this exact structure (no markdown, no fences):
 {
   "questions": [
     { "questionNumber": 1, "detectedAnswer": "A", "confidence": 0.95 },
-    { "questionNumber": 2, "detectedAnswer": "B", "confidence": 0.90 },
-    { "questionNumber": 3, "detectedAnswer": null, "confidence": 0.0 }
+    { "questionNumber": 2, "detectedAnswer": null, "confidence": 0.0 }
   ],
-  "totalDetected": 3,
-  "notes": "Any observations about image quality or detection issues"
+  "totalDetected": 2,
+  "notes": "observations"
 }
 
 Rules:
-- questionNumber starts at 1
-- detectedAnswer should be uppercase (A, B, C, D, E) or null if no bubble is clearly filled
+- detectedAnswer is uppercase A-E or null if unclear
 - confidence is 0.0 to 1.0
-- If you cannot detect any answer sheet or bubbles in the image, return: { "questions": [], "totalDetected": 0, "notes": "explanation" }
-- Only return the JSON object, nothing else`;
+- If no answer sheet is visible return { "questions": [], "totalDetected": 0, "notes": "No answer sheet detected" }`;
 
-    // Call Gemini Vision API
     const geminiResponse = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -117,13 +103,14 @@ Rules:
     }
 
     const geminiData = await geminiResponse.json();
-
-    // Extract the text response from Gemini
     const rawText =
       geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
-    // Parse the JSON from Gemini's response (strip any accidental markdown fences)
-    let parsed: { questions: DetectedQuestion[]; totalDetected: number; notes: string };
+    let parsed: {
+      questions: DetectedQuestion[];
+      totalDetected: number;
+      notes: string;
+    };
     try {
       const cleanedText = rawText
         .replace(/```json\s*/gi, "")
@@ -134,43 +121,43 @@ Rules:
       console.error("Failed to parse Gemini response:", rawText);
       return Response.json(
         {
-          error: "Failed to parse AI response. Try capturing a clearer image.",
+          error: "Failed to parse AI response. Try a clearer image.",
           rawResponse: rawText,
         },
         { status: 422 }
       );
     }
 
-    // Grade the results against the answer key
-    const gradedResults: GradedResult[] = parsed.questions.map((q) => {
-      const questionId = `q${q.questionNumber}`;
-      const expectedAnswer = answerKey[questionId] ?? null;
-      const detected = q.detectedAnswer?.toLowerCase() ?? null;
+    // Grade each question
+    const results = parsed.questions.map((q) => {
+      const key = `q${q.questionNumber}`;
+      const expected = answerKey[key]?.toUpperCase() ?? null;
+      const detected = q.detectedAnswer?.toUpperCase() ?? null;
 
       return {
-        questionId,
         questionNumber: q.questionNumber,
-        expectedAnswer: expectedAnswer ?? "",
-        detectedAnswer: detected,
+        expected,
+        detected,
         isCorrect:
-          detected && expectedAnswer
-            ? detected === expectedAnswer.toLowerCase()
-            : null,
+          detected && expected ? detected === expected : null,
         confidence: q.confidence,
       };
     });
 
-    const correctCount = gradedResults.filter((r) => r.isCorrect === true).length;
-    const totalGraded = gradedResults.filter((r) => r.isCorrect !== null).length;
+    const graded = results.filter((r) => r.isCorrect !== null);
+    const correct = graded.filter((r) => r.isCorrect === true).length;
 
     return Response.json({
-      results: gradedResults,
+      results,
       summary: {
         totalDetected: parsed.totalDetected,
-        totalGraded,
-        correctCount,
-        incorrectCount: totalGraded - correctCount,
-        score: totalGraded > 0 ? Math.round((correctCount / totalGraded) * 100) : 0,
+        totalGraded: graded.length,
+        correct,
+        incorrect: graded.length - correct,
+        score:
+          graded.length > 0
+            ? Math.round((correct / graded.length) * 100)
+            : 0,
       },
       notes: parsed.notes,
     });
