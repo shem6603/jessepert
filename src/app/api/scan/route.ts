@@ -12,7 +12,9 @@ const GEMINI_ENDPOINT =
 
 interface DetectedQuestion {
   questionNumber: number;
-  detectedAnswer: string | null;
+  expected: string | null;
+  detected: string | null;
+  isCorrect: boolean;
   confidence: number;
 }
 
@@ -27,10 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { image, answerKey } = body as {
-      image: string;
-      answerKey: Record<string, string>;
-    };
+    const { image } = body as { image: string };
 
     if (!image) {
       return Response.json(
@@ -39,35 +38,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!answerKey || Object.keys(answerKey).length === 0) {
-      return Response.json(
-        { error: "No answer key provided." },
-        { status: 400 }
-      );
-    }
-
     // Strip the data URL prefix if present
     const base64Data = image.includes(",") ? image.split(",")[1] : image;
-    const totalQuestions = Object.keys(answerKey).length;
 
-    const prompt = `You are an expert OMR (Optical Mark Recognition) system. Analyze this image of a multiple-choice answer sheet.
+    const prompt = `You are an expert AI teacher grading a student's multiple-choice test or worksheet. Analyze this image.
 
-Detect which bubbles are filled for each question. There may be up to ${totalQuestions} questions with options A, B, C, D (possibly E).
+For each multiple-choice question you find in the image:
+1. Read the question and its options.
+2. Determine what the objectively correct answer should be based on your knowledge ("expected").
+3. Detect which option the student selected/circled/filled ("detected").
+4. Evaluate if the student is correct.
 
 Return ONLY a JSON object with this exact structure (no markdown, no fences):
 {
   "questions": [
-    { "questionNumber": 1, "detectedAnswer": "A", "confidence": 0.95 },
-    { "questionNumber": 2, "detectedAnswer": null, "confidence": 0.0 }
+    { "questionNumber": 1, "expected": "A", "detected": "A", "isCorrect": true, "confidence": 0.95 },
+    { "questionNumber": 2, "expected": "C", "detected": "B", "isCorrect": false, "confidence": 0.90 }
   ],
   "totalDetected": 2,
-  "notes": "observations"
+  "notes": "observations about handwriting or image quality"
 }
 
 Rules:
-- detectedAnswer is uppercase A-E or null if unclear
+- expected and detected should be uppercase letters (A, B, C, D) or text if it's a short answer word. Use null if unclear.
 - confidence is 0.0 to 1.0
-- If no answer sheet is visible return { "questions": [], "totalDetected": 0, "notes": "No answer sheet detected" }`;
+- If no answer sheet or questions are visible return { "questions": [], "totalDetected": 0, "notes": "No questions detected" }`;
 
     const geminiResponse = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
       method: "POST",
@@ -128,27 +123,11 @@ Rules:
       );
     }
 
-    // Grade each question
-    const results = parsed.questions.map((q) => {
-      const key = `q${q.questionNumber}`;
-      const expected = answerKey[key]?.toUpperCase() ?? null;
-      const detected = q.detectedAnswer?.toUpperCase() ?? null;
-
-      return {
-        questionNumber: q.questionNumber,
-        expected,
-        detected,
-        isCorrect:
-          detected && expected ? detected === expected : null,
-        confidence: q.confidence,
-      };
-    });
-
-    const graded = results.filter((r) => r.isCorrect !== null);
+    const graded = parsed.questions;
     const correct = graded.filter((r) => r.isCorrect === true).length;
 
     return Response.json({
-      results,
+      results: graded,
       summary: {
         totalDetected: parsed.totalDetected,
         totalGraded: graded.length,

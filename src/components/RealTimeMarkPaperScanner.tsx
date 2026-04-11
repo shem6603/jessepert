@@ -9,18 +9,6 @@ import {
   X,
 } from "lucide-react";
 
-/* ────────────────────────────────────────────────────────────
-   Answer key – in production this comes from props / backend
-   ──────────────────────────────────────────────────────────── */
-
-const MOCK_ANSWER_KEY: Record<string, string> = {
-  q1: "A",
-  q2: "B",
-  q3: "C",
-  q4: "D",
-  q5: "A",
-};
-
 /* ── Types ── */
 
 interface GradedQuestion {
@@ -163,7 +151,6 @@ export function RealTimeMarkPaperScanner() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           image: imageData,
-          answerKey: MOCK_ANSWER_KEY,
         }),
       });
 
@@ -464,24 +451,6 @@ export function RealTimeMarkPaperScanner() {
             </button>
           </div>
         )}
-
-        {/* ── Answer key reference ── */}
-        <div className="rounded-2xl border border-dark-teal/10 bg-soft-teal/20 p-4">
-          <h3 className="text-sm font-bold text-navy">
-            Answer Key (Mock)
-          </h3>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {Object.entries(MOCK_ANSWER_KEY).map(([q, a]) => (
-              <span
-                key={q}
-                className="inline-flex items-center gap-1 rounded-lg bg-white/70 px-2.5 py-1 text-xs font-semibold text-navy"
-              >
-                {q.toUpperCase()}:{" "}
-                <span className="text-sky-blue">{a}</span>
-              </span>
-            ))}
-          </div>
-        </div>
 
         {/* ── Tips ── */}
         <div className="rounded-2xl border border-sky-blue/20 bg-sky-blue/5 p-4 text-sm text-navy/75">
