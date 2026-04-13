@@ -8,6 +8,8 @@ import {
   Check,
   X,
 } from "lucide-react";
+import { db } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 /* ── Types ── */
 
@@ -53,6 +55,11 @@ export function RealTimeMarkPaperScanner() {
   const [summary, setSummary] = useState<ScanSummary | null>(null);
   const [notes, setNotes] = useState<string | null>(null);
   const [scanCount, setScanCount] = useState(0);
+  
+  const [studentName, setStudentName] = useState<string | null>(null);
+  const [subject, setSubject] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   /* ──────────────────────────────────────────────────────────
      1. Request camera access
@@ -159,6 +166,9 @@ export function RealTimeMarkPaperScanner() {
       const data = await response.json();
 
       if (response.ok) {
+        if (data.studentName) setStudentName((prev) => prev || data.studentName);
+        if (data.subject) setSubject((prev) => prev || data.subject);
+        
         setResults(data.results ?? []);
         setSummary(data.summary ?? null);
         setNotes(data.notes ?? null);
@@ -227,6 +237,30 @@ export function RealTimeMarkPaperScanner() {
       stopCamera();
     };
   }, [stopCamera]);
+
+  /* ──────────────────────────────────────────────────────────
+     7. Save to Database
+     ────────────────────────────────────────────────────────── */
+  const handleSaveToDb = async () => {
+    if (!summary || results.length === 0) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      await addDoc(collection(db, "scans"), {
+        studentName,
+        subject,
+        summary,
+        results,
+        createdAt: serverTimestamp(),
+      });
+      setSaveSuccess(true);
+    } catch (err) {
+      console.error("Failed to save to db:", err);
+      setError("Failed to save result to database.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   /* ═══════════════════════════════════════════════════════════
      RENDER
@@ -309,7 +343,16 @@ export function RealTimeMarkPaperScanner() {
 
               {/* ── LIVE RESULTS OVERLAY ── */}
               {cameraActive && results.length > 0 && (
-                <div className="absolute left-3 top-3 max-h-[60vh] w-[min(20rem,calc(100vw-1.5rem))] overflow-y-auto rounded-2xl bg-black/70 p-3 backdrop-blur-md">
+                <div className="absolute left-3 top-3 max-h-[60vh] w-[min(20rem,calc(100vw-1.5rem))] flex flex-col gap-3 overflow-y-auto rounded-2xl bg-black/70 p-3 backdrop-blur-md">
+                  
+                  {/* Student & Subject info */}
+                  {(studentName || subject) && (
+                    <div className="rounded-lg bg-white/10 p-2 text-xs text-white">
+                      {studentName && <div><span className="opacity-60">Student:</span> <span className="font-bold">{studentName}</span></div>}
+                      {subject && <div><span className="opacity-60">Subject:</span> <span className="font-bold">{subject}</span></div>}
+                    </div>
+                  )}
+
                   {/* Score badge */}
                   {summary && (
                     <div className="mb-3 flex items-center justify-between">
@@ -366,6 +409,23 @@ export function RealTimeMarkPaperScanner() {
                       {notes}
                     </p>
                   )}
+
+                  {/* Save to Database Button */}
+                  {!liveScanning && results.length > 0 && (
+                    <button
+                      onClick={handleSaveToDb}
+                      disabled={isSaving || saveSuccess}
+                      className={`mt-2 w-full rounded-xl py-2.5 text-sm font-bold text-white transition ${
+                        saveSuccess
+                          ? "bg-green-500"
+                          : isSaving
+                          ? "bg-sky-blue/50 cursor-not-allowed"
+                          : "bg-sky-blue hover:bg-sky-blue/90"
+                      }`}
+                    >
+                      {saveSuccess ? "Saved Successfully!" : isSaving ? "Saving..." : "Save to Database"}
+                    </button>
+                  )}
                 </div>
               )}
 
@@ -406,7 +466,13 @@ export function RealTimeMarkPaperScanner() {
                   {/* Start / Stop scanning */}
                   <button
                     type="button"
-                    onClick={() => setLiveScanning((s) => !s)}
+                    onClick={() => {
+                      setLiveScanning((s) => {
+                        const newS = !s;
+                        if (newS) setSaveSuccess(false);
+                        return newS;
+                      });
+                    }}
                     className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full shadow-xl transition active:scale-95 ${
                       liveScanning
                         ? "bg-red-500 ring-4 ring-red-500/30"

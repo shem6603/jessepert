@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
 
     const prompt = `You are an expert AI teacher grading a student's multiple-choice test or worksheet. Analyze this image.
 
+First, look at the top of the paper (or anywhere on the first page) for a Student Name and a Subject. If you find them, extract them. If not, return null for those fields.
+
 For each multiple-choice question you find in the image:
 1. Read the question and its options.
 2. Determine what the objectively correct answer should be based on your knowledge ("expected").
@@ -51,6 +53,8 @@ For each multiple-choice question you find in the image:
 
 Return ONLY a JSON object with this exact structure (no markdown, no fences):
 {
+  "studentName": "John Doe",
+  "subject": "Mathematics",
   "questions": [
     { "questionNumber": 1, "expected": "A", "detected": "A", "isCorrect": true, "confidence": 0.95 },
     { "questionNumber": 2, "expected": "C", "detected": "B", "isCorrect": false, "confidence": 0.90 }
@@ -60,9 +64,10 @@ Return ONLY a JSON object with this exact structure (no markdown, no fences):
 }
 
 Rules:
+- studentName and subject should be strings if found, otherwise null.
 - expected and detected should be uppercase letters (A, B, C, D) or text if it's a short answer word. Use null if unclear.
 - confidence is 0.0 to 1.0
-- If no answer sheet or questions are visible return { "questions": [], "totalDetected": 0, "notes": "No questions detected" }`;
+- If no answer sheet or questions are visible return { "studentName": null, "subject": null, "questions": [], "totalDetected": 0, "notes": "No questions detected" }`;
 
     const geminiResponse = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
       method: "POST",
@@ -102,6 +107,8 @@ Rules:
       geminiData?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 
     let parsed: {
+      studentName: string | null;
+      subject: string | null;
       questions: DetectedQuestion[];
       totalDetected: number;
       notes: string;
@@ -127,6 +134,8 @@ Rules:
     const correct = graded.filter((r) => r.isCorrect === true).length;
 
     return Response.json({
+      studentName: parsed.studentName || null,
+      subject: parsed.subject || null,
       results: graded,
       summary: {
         totalDetected: parsed.totalDetected,
