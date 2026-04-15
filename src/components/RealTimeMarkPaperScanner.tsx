@@ -52,9 +52,16 @@ export function RealTimeMarkPaperScanner() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [liveScanning, setLiveScanning] = useState(false);
   const [results, setResults] = useState<GradedQuestion[]>([]);
-  const [summary, setSummary] = useState<ScanSummary | null>(null);
   const [notes, setNotes] = useState<string | null>(null);
   const [scanCount, setScanCount] = useState(0);
+
+  const summary = results.length > 0 ? {
+    totalDetected: results.length,
+    totalGraded: results.length,
+    correct: results.filter((r) => r.isCorrect).length,
+    incorrect: results.filter((r) => !r.isCorrect).length,
+    score: Math.round((results.filter((r) => r.isCorrect).length / results.length) * 100),
+  } : null;
   
   const [studentName, setStudentName] = useState<string | null>(null);
   const [subject, setSubject] = useState<string | null>(null);
@@ -169,8 +176,20 @@ export function RealTimeMarkPaperScanner() {
         if (data.studentName) setStudentName((prev) => prev || data.studentName);
         if (data.subject) setSubject((prev) => prev || data.subject);
         
-        setResults(data.results ?? []);
-        setSummary(data.summary ?? null);
+        setResults((prevResults) => {
+          const merged = [...prevResults];
+          const incoming: GradedQuestion[] = data.results ?? [];
+          incoming.forEach((inc) => {
+            const idx = merged.findIndex((r) => r.questionNumber === inc.questionNumber);
+            if (idx >= 0) {
+              merged[idx] = inc;
+            } else {
+              merged.push(inc);
+            }
+          });
+          return merged.sort((a, b) => a.questionNumber - b.questionNumber);
+        });
+        
         setNotes(data.notes ?? null);
         setScanCount((c) => c + 1);
         setError(null);
@@ -343,24 +362,24 @@ export function RealTimeMarkPaperScanner() {
 
               {/* ── LIVE RESULTS OVERLAY ── */}
               {cameraActive && results.length > 0 && (
-                <div className="absolute left-3 top-3 max-h-[60vh] w-[min(20rem,calc(100vw-1.5rem))] flex flex-col gap-3 overflow-y-auto rounded-2xl bg-black/70 p-3 backdrop-blur-md">
+                <div className="absolute left-3 top-3 bottom-28 w-48 flex flex-col gap-2 overflow-y-auto rounded-2xl bg-black/50 p-2 backdrop-blur-md hide-scrollbar">
                   
                   {/* Student & Subject info */}
                   {(studentName || subject) && (
-                    <div className="rounded-lg bg-white/10 p-2 text-xs text-white">
-                      {studentName && <div><span className="opacity-60">Student:</span> <span className="font-bold">{studentName}</span></div>}
-                      {subject && <div><span className="opacity-60">Subject:</span> <span className="font-bold">{subject}</span></div>}
+                    <div className="rounded-lg bg-white/10 p-1.5 text-[10px] text-white">
+                      {studentName && <div className="truncate"><span className="opacity-60">Name:</span> <span className="font-bold">{studentName}</span></div>}
+                      {subject && <div className="truncate"><span className="opacity-60">Subj:</span> <span className="font-bold">{subject}</span></div>}
                     </div>
                   )}
 
                   {/* Score badge */}
                   {summary && (
-                    <div className="mb-3 flex items-center justify-between">
-                      <span className="text-xs font-bold text-white/80">
+                    <div className="mb-1 flex items-center justify-between px-1">
+                      <span className="text-[11px] font-bold text-white/80">
                         Score
                       </span>
                       <span
-                        className={`rounded-full px-3 py-1 text-sm font-extrabold ${
+                        className={`rounded-full px-2 py-0.5 text-xs font-extrabold ${
                           summary.score >= 80
                             ? "bg-green-500 text-white"
                             : summary.score >= 50
@@ -374,29 +393,29 @@ export function RealTimeMarkPaperScanner() {
                   )}
 
                   {/* Per-question results */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     {results
                       .filter((r) => r.detected)
                       .map((r) => (
                         <div
                           key={r.questionNumber}
-                          className={`flex items-center justify-between rounded-xl px-3 py-2 text-sm font-semibold ${
+                          className={`flex items-center justify-between rounded-lg px-2 py-1.5 text-xs font-semibold ${
                             r.isCorrect
                               ? "bg-green-500/30 text-green-300"
                               : "bg-red-500/30 text-red-300"
                           }`}
                         >
-                          <span>
+                          <span className="truncate">
                             Q{r.questionNumber}: {r.detected}
                           </span>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-xs text-white/50">
+                          <div className="ml-1 flex items-center gap-1 shrink-0">
+                            <span className="text-[10px] text-white/50">
                               ({r.expected})
                             </span>
                             {r.isCorrect ? (
-                              <Check className="h-4 w-4 text-green-400" />
+                              <Check className="h-3 w-3 text-green-400" />
                             ) : (
-                              <X className="h-4 w-4 text-red-400" />
+                              <X className="h-3 w-3 text-red-400" />
                             )}
                           </div>
                         </div>
@@ -405,17 +424,20 @@ export function RealTimeMarkPaperScanner() {
 
                   {/* Notes */}
                   {notes && (
-                    <p className="mt-2 text-[11px] italic text-white/40">
+                    <p className="mt-1 px-1 text-[10px] italic text-white/40 leading-tight">
                       {notes}
                     </p>
                   )}
 
+                  {/* Spacer to push button to bottom if we want, or naturally flow */}
+                  <div className="flex-1" />
+
                   {/* Save to Database Button */}
-                  {!liveScanning && results.length > 0 && (
+                  {!liveScanning && (
                     <button
                       onClick={handleSaveToDb}
                       disabled={isSaving || saveSuccess}
-                      className={`mt-2 w-full rounded-xl py-2.5 text-sm font-bold text-white transition ${
+                      className={`mt-1 w-full rounded-lg py-2 text-xs font-bold text-white transition ${
                         saveSuccess
                           ? "bg-green-500"
                           : isSaving

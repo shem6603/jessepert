@@ -27,7 +27,7 @@ const navItems = [
     enabled: true,
   },
   { href: "/dashboard/history", label: "History", icon: History, enabled: false },
-  { href: "/dashboard/classes", label: "Classes", icon: Users, enabled: false },
+  { href: "/dashboard/classes", label: "Classes", icon: Users, enabled: true },
   { href: "/dashboard/settings", label: "Settings", icon: Settings, enabled: false },
 ] as const;
 
@@ -70,6 +70,7 @@ export function DashboardSidebar({ open, onClose }: DashboardSidebarProps) {
               width={120}
               height={40}
               className="h-auto w-auto max-w-[120px] object-contain"
+              style={{ width: "auto", height: "auto" }}
               priority={false}
             />
           </Link>

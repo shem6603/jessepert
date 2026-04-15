@@ -45,6 +45,7 @@ export default function DashboardPage() {
               width={160}
               height={54}
               className="h-auto w-auto max-w-[140px] object-contain sm:max-w-[160px]"
+              style={{ width: "auto", height: "auto" }}
               priority
             />
             <Link
