@@ -1,95 +1,203 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Clock, Zap, CheckCircle, PlayCircle, BookOpen } from "lucide-react";
 import LoginButton from "@/components/LoginButton";
 
 export default function Home() {
   return (
-    <main className="relative isolate min-h-[100dvh] min-h-screen w-full overflow-x-hidden bg-soft-teal px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))] sm:px-6 sm:pb-8 sm:pt-6">
-      {/* Decorative blobs — behind all content */}
-      <div
-        className="pointer-events-none absolute inset-0 -z-10 overflow-hidden"
-        aria-hidden="true"
-      >
-        <div className="absolute top-[10%] left-[-10%] h-96 w-96 rounded-full bg-sky-blue/15 blur-3xl" />
-        <div className="absolute bottom-[10%] right-[-10%] h-96 w-96 rounded-full bg-dark-teal/10 blur-3xl" />
+    <div className="bg-background text-on-background font-body min-h-screen flex flex-col relative overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container">
+      {/* Decorative Background */}
+      <div aria-hidden="true" className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] right-[-5%] w-[800px] h-[800px] rounded-full bg-secondary-container/20 blur-[120px] mix-blend-multiply"></div>
+        <div className="absolute bottom-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-primary-container/10 blur-[100px] mix-blend-multiply"></div>
+        <div className="absolute top-[40%] left-[20%] w-[400px] h-[400px] rounded-full bg-surface-container-high/40 blur-[80px]"></div>
       </div>
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col">
-        {/* Header: in document flow so it never stacks over the hero */}
-        <header className="flex w-full shrink-0 flex-row flex-wrap items-center justify-between gap-3 sm:gap-4">
-          <Image
-            src="/logo.png"
-            alt="Jesspert Logo - AI Assistant for Jamaican Teachers"
-            width={180}
-            height={60}
-            className="max-w-[min(40vw,140px)] object-contain sm:max-w-[180px]"
-            style={{ width: "auto", height: "auto" }}
-            priority
-          />
-          <div className="flex min-w-0 flex-1 justify-end sm:flex-initial">
+      {/* TopNavBar */}
+      <nav className="fixed top-0 w-full z-50 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] transition-all duration-300">
+        <div className="flex justify-between items-center px-8 py-4 max-w-7xl mx-auto">
+          <div className="flex items-center gap-2 relative">
+            <div className="absolute inset-[-2px] bg-white/60 dark:bg-white/80 rounded-[2rem] blur-sm z-0 pointer-events-none"></div>
+            <Image
+              src="/logo.png"
+              alt="Clarified Educator"
+              width={90}
+              height={30}
+              className="max-w-[100px] object-contain relative z-10"
+              style={{ width: "auto", height: "auto" }}
+              priority={true}
+            />
+          </div>
+          <div className="hidden md:flex items-center gap-8">
+            <Link className="text-slate-600 dark:text-slate-400 hover:text-sky-600 font-medium font-body transition-colors" href="#">Features</Link>
+            <Link className="text-slate-600 dark:text-slate-400 hover:text-sky-600 font-medium font-body transition-colors" href="#">Case Studies</Link>
+            <Link className="text-slate-600 dark:text-slate-400 hover:text-sky-600 font-medium font-body transition-colors" href="#">Pricing</Link>
+            <Link className="text-slate-600 dark:text-slate-400 hover:text-sky-600 font-medium font-body transition-colors" href="#">Resources</Link>
+          </div>
+          <div className="bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-full hover:shadow-lg hover:opacity-90 transition-all duration-300">
             <LoginButton />
           </div>
-        </header>
+        </div>
+      </nav>
 
-        <section
-          className="mx-auto w-full max-w-4xl space-y-6 pt-8 text-center sm:space-y-8 sm:pt-10 md:pt-12"
-          aria-labelledby="hero-heading"
-        >
-        {/* Top Badge */}
-        <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-full bg-white/70 text-dark-teal font-medium text-xs sm:text-sm shadow-sm border border-dark-teal/10 leading-snug backdrop-blur-sm">
-          <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-blue flex-shrink-0" aria-hidden="true" />
-          <span>Built for Jamaica&apos;s Basic, Primary & Secondary Teachers</span>
+      {/* Main Content */}
+      <main className="flex-grow relative z-10 pt-32 pb-24 px-8 max-w-7xl mx-auto w-full flex flex-col justify-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+          {/* Left Column: Hero Copy */}
+          <div className="lg:col-span-6 flex flex-col gap-8 text-left">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-surface-container-high/50 text-on-surface-variant text-sm font-medium border border-outline-variant/20 w-fit backdrop-blur-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-secondary"></span>
+              </span>
+              Now in open beta for Jamaican educators
+            </div>
+            <h1 className="text-5xl lg:text-7xl font-extrabold font-headline text-on-background leading-[1.1] tracking-tight">
+              Get Back More Than <span className="bg-gradient-to-r from-secondary to-secondary-container text-gradient inline-block">8 Hours a Week.</span>
+            </h1>
+            <div className="text-2xl lg:text-3xl font-headline font-bold text-on-surface-variant flex items-center gap-2">
+              <span>Meet Your AI</span>
+              <span className="text-secondary relative">
+                Lesson Planner
+                <span className="absolute bottom-0 left-0 w-full h-1 bg-secondary/30 -z-10 rounded"></span>
+              </span>
+            </div>
+            <p className="text-lg lg:text-xl font-body text-on-surface-variant leading-relaxed max-w-xl">
+              Stop sacrificing your evenings to unpaid marking and weekend lesson planning. Reclaim your time with intelligent automation designed specifically for the Caribbean curriculum.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 mt-4">
+              <Link href="/dashboard" className="bg-gradient-to-r from-primary to-primary-container text-on-primary px-8 py-4 rounded-full font-bold text-base tracking-wide hover:shadow-[0_8px_20px_rgba(0,101,141,0.3)] transition-all duration-300 flex items-center justify-center gap-2">
+                Start for Free
+                <span className="material-symbols-outlined">arrow_forward</span>
+              </Link>
+              <button className="bg-secondary text-on-secondary px-8 py-4 rounded-full font-bold text-base hover:bg-secondary-container transition-colors flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined">play_circle</span>
+                Watch Demo
+              </button>
+            </div>
+          </div>
+          {/* Right Column: Interactive Demo Card */}
+          <div className="lg:col-span-6 relative">
+            {/* Decorative element behind card */}
+            <div className="absolute -inset-4 bg-gradient-to-br from-primary-container/20 to-secondary-container/20 rounded-[2rem] blur-2xl -z-10"></div>
+            <div className="glass-panel rounded-[2rem] p-8 border border-white/40 dark:border-white/10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-full bg-primary-container/10 flex items-center justify-center text-primary">
+                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>psychology</span>
+                </div>
+                <h2 className="text-xl font-bold font-headline text-on-surface">Try Jesspert: Quick Lesson Demo</h2>
+              </div>
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-on-surface-variant mb-2 font-body">Lesson Topic</label>
+                  <div className="relative">
+                    <input className="w-full bg-surface-variant border-transparent focus:bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4 py-3 text-on-surface font-body placeholder-outline transition-all" placeholder="e.g., Photosynthesis in tropical plants" type="text" />
+                    <span className="material-symbols-outlined absolute right-4 top-3 text-outline">search</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-on-surface-variant mb-2 font-body">Grade Level</label>
+                    <select className="w-full bg-surface-variant border-transparent focus:bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4 py-3 text-on-surface font-body appearance-none transition-all">
+                      <option>Grade 9</option>
+                      <option>Grade 10</option>
+                      <option>CSEC</option>
+                      <option>CAPE</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-on-surface-variant mb-2 font-body">Duration</label>
+                    <select className="w-full bg-surface-variant border-transparent focus:bg-surface-container-lowest focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-4 py-3 text-on-surface font-body appearance-none transition-all">
+                      <option>45 mins</option>
+                      <option>60 mins</option>
+                      <option>90 mins</option>
+                    </select>
+                  </div>
+                </div>
+                <button className="w-full bg-primary text-on-primary rounded-xl py-3 font-bold font-body hover:bg-on-primary-fixed-variant transition-colors flex justify-center items-center gap-2">
+                  <span className="material-symbols-outlined text-sm">bolt</span>
+                  Generate Outline
+                </button>
+                <div className="mt-6 border-t border-outline-variant/30 pt-6">
+                  <h3 className="text-sm font-bold text-on-surface-variant mb-3 uppercase tracking-wider font-headline">AI Output Preview</h3>
+                  <div className="bg-surface-container-low rounded-xl p-4 font-body text-sm text-on-surface-variant space-y-3">
+                    <div className="flex gap-2">
+                      <span className="material-symbols-outlined text-primary text-lg">check_circle</span>
+                      <p><strong className="text-on-surface">Objective:</strong> Students will identify the main stages of photosynthesis specific to C3 plants...</p>
+                    </div>
+                    <div className="w-full h-2 bg-surface-variant rounded-full overflow-hidden">
+                      <div className="w-1/3 h-full bg-secondary/50"></div>
+                    </div>
+                    <div className="w-full h-2 bg-surface-variant rounded-full overflow-hidden">
+                      <div className="w-2/3 h-full bg-secondary/30"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Headline */}
-        <h1 id="hero-heading" className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-navy tracking-tight drop-shadow-sm px-1 sm:px-0 leading-[1.12] text-balance">
-          Get Back More Than 8 Hours a Week.<br className="hidden sm:block" />
-          <span className="text-sky-blue inline-block mt-2">Meet Your AI Teaching Assistant.</span>
-        </h1>
-
-        {/* Subheadline */}
-        <p className="text-base sm:text-lg md:text-xl text-navy/80 max-w-2xl mx-auto leading-relaxed px-2 sm:px-0">
-          Stop sacrificing your evenings to unpaid marking and weekend lesson planning. From PEP to CSEC, Jesspert handles the heavy lifting—<strong className="font-semibold px-2 py-0.5 sm:py-1 bg-white/70 rounded-md text-dark-teal shadow-sm inline-block mt-2 sm:mt-0">giving you your free time back.</strong>
-        </p>
-
-        {/* Call to Actions */}
-        <nav className="flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3 sm:gap-4 pt-6 sm:pt-8 w-full px-4 sm:px-0" aria-label="Main call to action">
-          <Link
-            href="/dashboard"
-            className="touch-manipulation min-h-[44px] w-full sm:w-auto px-6 py-3.5 sm:px-8 sm:py-4 rounded-xl bg-sky-blue text-white font-bold text-base sm:text-lg hover:bg-sky-blue/90 shadow-xl shadow-sky-blue/20 transition-all hover:-translate-y-1 active:scale-95 flex items-center justify-center gap-2 group"
-            aria-label="Open the teacher dashboard"
-          >
-            <Clock className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-rotate-12 transition-transform" aria-hidden="true" />
-            Get Your Weekends Back
-          </Link>
-
-          <button
-            type="button"
-            className="touch-manipulation min-h-[44px] w-full sm:w-auto px-6 py-3.5 sm:px-8 sm:py-4 rounded-xl border-2 border-dark-teal/30 text-dark-teal bg-transparent font-bold text-base sm:text-lg hover:bg-dark-teal/5 transition-all active:scale-95 flex items-center justify-center gap-2"
-            aria-label="Watch how Jesspert works"
-          >
-            <PlayCircle className="w-4 h-4 sm:w-5 sm:h-5" aria-hidden="true" />
-            See How It Works
-          </button>
-        </nav>
-
-        {/* Value Proposition Cards - Updated for broader appeal */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 pt-12 sm:pt-16">
-          {[
-            { icon: <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-sky-blue" aria-hidden="true" />, title: "Instant Grading", desc: "Snap a photo of handwritten work and let AI grade it against your rubrics." },
-            { icon: <BookOpen className="w-6 h-6 sm:w-8 sm:h-8 text-sky-blue" aria-hidden="true" />, title: "Smart Lesson Plans", desc: "Generate engaging, curriculum-aligned lesson plans for any grade level instantly." },
-            { icon: <Clock className="w-6 h-6 sm:w-8 sm:h-8 text-sky-blue" aria-hidden="true" />, title: "Total Time Freedom", desc: "Automate tracking, reporting, and admin work so you can leave school at school." }
-          ].map((feature, i) => (
-            <article key={i} className="bg-white/90 backdrop-blur-sm p-5 sm:p-6 rounded-2xl shadow-sm border border-navy/5 text-left flex flex-col gap-2 sm:gap-3 hover:shadow-md hover:-translate-y-1 transition-all">
-              {feature.icon}
-              <h3 className="font-bold text-navy text-lg sm:text-xl">{feature.title}</h3>
-              <p className="text-sm sm:text-base text-navy/70 leading-snug">{feature.desc}</p>
-            </article>
-          ))}
+        {/* Feature Cards Grid (Bottom) */}
+        <div className="mt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Card 1 */}
+          <div className="glass-panel rounded-xl p-6 border border-white/40 dark:border-white/10 hover:bg-surface-container-lowest/90 transition-all duration-300 transform hover:-translate-y-1">
+            <div className="w-12 h-12 rounded-full bg-primary-container/10 flex items-center justify-center mb-4 text-primary">
+              <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>grading</span>
+            </div>
+            <h3 className="text-xl font-bold font-headline text-on-surface mb-2">Instant Grading</h3>
+            <p className="text-on-surface-variant font-body text-sm leading-relaxed">
+              Automate multiple-choice and short-answer grading aligned with regional syllabi standards.
+            </p>
+          </div>
+          {/* Card 2 */}
+          <div className="glass-panel rounded-xl p-6 border border-white/40 dark:border-white/10 hover:bg-surface-container-lowest/90 transition-all duration-300 transform hover:-translate-y-1 md:-translate-y-4">
+            <div className="w-12 h-12 rounded-full bg-primary-container/10 flex items-center justify-center mb-4 text-primary">
+              <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>menu_book</span>
+            </div>
+            <h3 className="text-xl font-bold font-headline text-on-surface mb-2">Smart Lesson Plans</h3>
+            <p className="text-on-surface-variant font-body text-sm leading-relaxed">
+              Generate comprehensive, culturally relevant lesson outlines in seconds, not hours.
+            </p>
+          </div>
+          {/* Card 3 */}
+          <div className="glass-panel rounded-xl p-6 border border-white/40 dark:border-white/10 hover:bg-surface-container-lowest/90 transition-all duration-300 transform hover:-translate-y-1">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4 text-primary">
+              <span className="material-symbols-outlined text-2xl" style={{ fontVariationSettings: "'FILL' 1" }}>schedule</span>
+            </div>
+            <h3 className="text-xl font-bold font-headline text-on-surface mb-2">Total Time Freedom</h3>
+            <p className="text-on-surface-variant font-body text-sm leading-relaxed">
+              Reclaim your evenings and weekends. Let AI handle the administrative heavy lifting.
+            </p>
+          </div>
         </div>
-        </section>
-      </div>
-    </main>
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-slate-50 dark:bg-slate-950 w-full py-12 px-8 bg-surface-container-low relative z-10 border-t border-outline-variant/10">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 max-w-7xl mx-auto font-body text-sm tracking-wide">
+          <div className="flex items-center gap-2 mb-4 md:mb-0 relative">
+            <div className="absolute inset-[-2px] bg-white/60 dark:bg-white/80 rounded-[2rem] blur-sm z-0 pointer-events-none"></div>
+            <Image
+              src="/logo.png"
+              alt="Clarified Educator"
+              width={90}
+              height={30}
+              className="max-w-[90px] object-contain relative z-10"
+              style={{ width: "auto", height: "auto" }}
+              priority={false}
+            />
+          </div>
+          <p className="text-slate-500 dark:text-slate-500 text-center md:text-left">
+            © 2024 The Clarified Educator. Elevating Jamaican Pedagogy through Intelligence.
+          </p>
+          <div className="flex gap-6 flex-wrap justify-center">
+            <Link className="text-slate-500 dark:text-slate-500 hover:text-sky-500 transition-colors bg-white/0" href="#">Privacy Policy</Link>
+            <Link className="text-slate-500 dark:text-slate-500 hover:text-sky-500 transition-colors" href="#">Terms of Service</Link>
+            <Link className="text-slate-500 dark:text-slate-500 hover:text-sky-500 transition-colors" href="#">Contact Support</Link>
+            <Link className="text-slate-500 dark:text-slate-500 hover:text-sky-500 transition-colors" href="#">Careers</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }

@@ -8,11 +8,13 @@ import { useAuth } from "@/context/AuthContext";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardTopBar } from "@/components/dashboard/DashboardTopBar";
 import { RealTimeMarkPaperScanner } from "@/components/RealTimeMarkPaperScanner";
+import BatchScanner from "@/components/BatchScanner";
 import LoginButton from "@/components/LoginButton";
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"batch" | "live">("batch");
 
   if (loading) {
     return (
@@ -77,69 +79,28 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="relative flex min-h-[100dvh] min-h-screen bg-soft-teal pt-[env(safe-area-inset-top)]">
-      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
-        <div className="absolute top-[-10%] left-[-10%] h-[28rem] w-[28rem] rounded-full bg-sky-blue/10 blur-3xl" />
-        <div className="absolute bottom-[-10%] right-[-10%] h-[28rem] w-[28rem] rounded-full bg-dark-teal/10 blur-3xl" />
-      </div>
+    <div className="dashboard-theme bg-[#0e0e0e] text-on-surface font-body h-screen flex overflow-hidden antialiased">
       <DashboardSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
       />
 
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:min-h-screen">
+      <main className="lg:ml-64 flex-1 flex flex-col relative h-full bg-surface">
         <DashboardTopBar
           user={user}
           onMenuOpen={() => setSidebarOpen(true)}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
         />
 
-        <main className="flex-1 overflow-y-auto px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] sm:px-6 lg:px-10 lg:py-10">
-          <div className="mx-auto w-full max-w-6xl">
-            <div className="grid gap-6 lg:grid-cols-[1fr,360px]">
-              <div className="space-y-6">
-                <RealTimeMarkPaperScanner />
-              </div>
-
-              <aside className="space-y-4">
-                <section className="rounded-2xl border border-dark-teal/10 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
-                  <h2 className="text-sm font-bold text-navy">Today</h2>
-                  <p className="mt-1 text-sm text-navy/65">
-                    Upload a paper and Jesspert will generate marks and feedback.
-                  </p>
-                  <div className="mt-4 grid grid-cols-2 gap-3">
-                    <div className="rounded-2xl bg-soft-teal/60 p-4 ring-1 ring-dark-teal/10">
-                      <p className="text-xs font-semibold text-navy/60">Papers marked</p>
-                      <p className="mt-1 text-2xl font-extrabold text-navy">0</p>
-                    </div>
-                    <div className="rounded-2xl bg-soft-teal/60 p-4 ring-1 ring-dark-teal/10">
-                      <p className="text-xs font-semibold text-navy/60">Time saved</p>
-                      <p className="mt-1 text-2xl font-extrabold text-navy">—</p>
-                    </div>
-                  </div>
-                </section>
-
-                <section className="rounded-2xl border border-dark-teal/10 bg-white/80 p-5 shadow-sm backdrop-blur-sm">
-                  <h2 className="text-sm font-bold text-navy">Tips for best results</h2>
-                  <ul className="mt-3 space-y-2 text-sm text-navy/65">
-                    <li className="flex gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-blue" aria-hidden />
-                      Use bright lighting and avoid shadows.
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-blue" aria-hidden />
-                      Keep the page flat and capture the full sheet.
-                    </li>
-                    <li className="flex gap-2">
-                      <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-sky-blue" aria-hidden />
-                      If handwriting is faint, try a closer shot.
-                    </li>
-                  </ul>
-                </section>
-              </aside>
-            </div>
-          </div>
-        </main>
-      </div>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-8 lg:p-12">
+          {activeTab === 'batch' ? (
+            <BatchScanner />
+          ) : (
+            <RealTimeMarkPaperScanner />
+          )}
+        </div>
+      </main>
     </div>
   );
 }

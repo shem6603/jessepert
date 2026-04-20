@@ -286,7 +286,7 @@ export function RealTimeMarkPaperScanner() {
      ═══════════════════════════════════════════════════════════ */
   return (
     <section
-      className="rounded-3xl border border-dark-teal/10 bg-white/80 p-5 shadow-sm sm:p-8"
+      className="max-w-5xl mx-auto rounded-3xl border border-outline-variant/30 w-full bg-surface-container-lowest p-5 shadow-sm sm:p-8 mt-4"
       aria-labelledby="scanner-heading"
     >
       <div className="space-y-6">
@@ -294,11 +294,11 @@ export function RealTimeMarkPaperScanner() {
         <div className="space-y-2">
           <h2
             id="scanner-heading"
-            className="text-xl font-extrabold tracking-tight text-navy sm:text-2xl"
+            className="text-xl font-headline font-extrabold tracking-tight text-on-surface sm:text-3xl"
           >
             Live AI Paper Grader
           </h2>
-          <p className="text-sm text-navy/65">
+          <p className="text-sm text-on-surface-variant">
             Point your camera at an answer sheet. Gemini Vision AI will
             continuously detect and grade answers — green for correct, red for
             wrong.
@@ -306,13 +306,13 @@ export function RealTimeMarkPaperScanner() {
         </div>
 
         {/* ── Gemini status ── */}
-        <div className="flex items-center gap-2 text-sm">
+        <div className="flex items-center gap-2 text-sm font-bold">
           <div
             className={`h-2 w-2 rounded-full ${
-              liveScanning ? "animate-pulse bg-green-500" : "bg-green-500"
+              liveScanning ? "animate-pulse bg-primary" : "bg-primary"
             }`}
           />
-          <span className="text-navy/70">
+          <span className="text-on-surface-variant">
             {liveScanning
               ? `Scanning live… (${scanCount} scans)`
               : "Gemini Vision AI ready"}
@@ -324,22 +324,22 @@ export function RealTimeMarkPaperScanner() {
           className={
             cameraActive
               ? "fixed inset-0 z-50 bg-black"
-              : "relative w-full overflow-hidden rounded-2xl border border-dark-teal/10 bg-navy/5"
+              : "relative w-full overflow-hidden rounded-2xl border border-outline-variant/30 bg-surface-container-high"
           }
         >
           {cameraPermission !== "granted" ? (
-            <div className="flex h-80 flex-col items-center justify-center gap-4 bg-soft-teal/30 sm:h-96">
+            <div className="flex h-80 flex-col items-center justify-center gap-4 bg-surface-container sm:h-96">
               <div className="relative">
-                <div className="absolute inset-0 animate-ping rounded-full bg-sky-blue/20" />
-                <Camera className="relative h-12 w-12 text-navy/40" />
+                <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
+                <Camera className="relative h-12 w-12 text-on-surface-variant/50" />
               </div>
-              <p className="text-sm font-medium text-navy/60">
+              <p className="text-sm font-bold text-on-surface-variant">
                 Camera access required to start scanning
               </p>
               <button
                 type="button"
                 onClick={requestCameraAccess}
-                className="rounded-xl bg-sky-blue/10 px-4 py-2 text-xs font-semibold text-sky-blue transition hover:bg-sky-blue/20"
+                className="rounded-xl bg-primary/20 px-4 py-2 text-xs font-bold text-primary transition hover:bg-primary/30"
               >
                 Grant Camera Access
               </button>
@@ -362,11 +362,11 @@ export function RealTimeMarkPaperScanner() {
 
               {/* ── LIVE RESULTS OVERLAY ── */}
               {cameraActive && results.length > 0 && (
-                <div className="absolute left-3 top-3 bottom-28 w-48 flex flex-col gap-2 overflow-y-auto rounded-2xl bg-black/50 p-2 backdrop-blur-md hide-scrollbar">
+                <div className="absolute left-3 top-3 bottom-28 w-48 flex flex-col gap-2 overflow-y-auto rounded-2xl bg-black/60 p-2 backdrop-blur-xl hide-scrollbar border border-white/10">
                   
                   {/* Student & Subject info */}
                   {(studentName || subject) && (
-                    <div className="rounded-lg bg-white/10 p-1.5 text-[10px] text-white">
+                    <div className="rounded-lg bg-surface-container-highest p-1.5 text-[10px] text-on-surface">
                       {studentName && <div className="truncate"><span className="opacity-60">Name:</span> <span className="font-bold">{studentName}</span></div>}
                       {subject && <div className="truncate"><span className="opacity-60">Subj:</span> <span className="font-bold">{subject}</span></div>}
                     </div>
@@ -437,12 +437,12 @@ export function RealTimeMarkPaperScanner() {
                     <button
                       onClick={handleSaveToDb}
                       disabled={isSaving || saveSuccess}
-                      className={`mt-1 w-full rounded-lg py-2 text-xs font-bold text-white transition ${
+                      className={`mt-1 w-full rounded-lg py-2 text-xs font-bold transition ${
                         saveSuccess
-                          ? "bg-green-500"
+                          ? "bg-primary text-on-primary"
                           : isSaving
-                          ? "bg-sky-blue/50 cursor-not-allowed"
-                          : "bg-sky-blue hover:bg-sky-blue/90"
+                          ? "bg-surface-variant cursor-not-allowed text-on-surface-variant"
+                          : "bg-primary text-on-primary hover:bg-primary-container"
                       }`}
                     >
                       {saveSuccess ? "Saved Successfully!" : isSaving ? "Saving..." : "Save to Database"}
@@ -453,19 +453,19 @@ export function RealTimeMarkPaperScanner() {
 
               {/* ── Top-right HUD ── */}
               {cameraActive && (
-                <div className="absolute right-3 top-3 space-y-1 rounded-xl bg-black/60 px-3 py-2 backdrop-blur-md">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-white">
+                <div className="absolute right-3 top-3 space-y-1 rounded-xl bg-black/60 px-3 py-2 backdrop-blur-md border border-white/10">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-white">
                     <div
                       className={`h-1.5 w-1.5 rounded-full ${
                         liveScanning
-                          ? "animate-pulse bg-green-400"
+                          ? "animate-pulse bg-primary"
                           : "bg-white/40"
                       }`}
                     />
                     {liveScanning ? "SCANNING" : "LIVE"}
                   </div>
                   {isAnalyzing && (
-                    <div className="flex items-center gap-1 text-[11px] text-sky-blue">
+                    <div className="flex items-center gap-1 text-[11px] text-primary">
                       <Loader2 className="h-3 w-3 animate-spin" />
                       Analyzing…
                     </div>
@@ -480,7 +480,7 @@ export function RealTimeMarkPaperScanner() {
                   <button
                     type="button"
                     onClick={stopCamera}
-                    className="touch-manipulation text-base font-bold text-white transition active:scale-95"
+                    className="touch-manipulation text-base font-bold text-white transition active:scale-95 bg-black/40 hover:bg-black/80 px-6 py-2 rounded-full border border-white/20 backdrop-blur-sm"
                   >
                     Cancel
                   </button>
@@ -497,8 +497,8 @@ export function RealTimeMarkPaperScanner() {
                     }}
                     className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full shadow-xl transition active:scale-95 ${
                       liveScanning
-                        ? "bg-red-500 ring-4 ring-red-500/30"
-                        : "bg-white ring-4 ring-white/30"
+                        ? "bg-red-500"
+                        : "bg-surface"
                     }`}
                     aria-label={
                       liveScanning ? "Stop scanning" : "Start scanning"
@@ -507,12 +507,12 @@ export function RealTimeMarkPaperScanner() {
                     {liveScanning ? (
                       <StopCircle className="h-7 w-7 text-white" />
                     ) : (
-                      <div className="h-[3.25rem] w-[3.25rem] rounded-full border-[3px] border-green-500" />
+                      <div className="h-[3.25rem] w-[3.25rem] rounded-full border-[3px] border-primary" />
                     )}
                   </button>
 
                   {/* Spacer for centering */}
-                  <div className="w-[66px]" aria-hidden />
+                  <div className="w-[88px]" aria-hidden />
                 </div>
               )}
             </>
@@ -521,7 +521,7 @@ export function RealTimeMarkPaperScanner() {
 
         {/* ── Error ── */}
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="rounded-xl border border-error/50 bg-error-container p-3 text-sm font-bold text-on-error-container">
             {error}
           </div>
         )}
@@ -532,28 +532,30 @@ export function RealTimeMarkPaperScanner() {
             <button
               type="button"
               onClick={requestCameraAccess}
-              className="touch-manipulation inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-sky-blue px-6 py-2.5 text-sm font-extrabold text-white shadow-lg shadow-sky-blue/25 transition hover:bg-sky-blue/90 active:scale-[0.99] sm:px-8"
+              className="touch-manipulation inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-extrabold text-on-primary shadow-[0_0_20px_rgba(184,253,75,0.15)] transition hover:scale-[1.02] active:scale-[0.99]"
             >
-              <Camera className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Camera className="h-5 w-5" />
               Start Camera
             </button>
           </div>
         )}
 
         {/* ── Tips ── */}
-        <div className="rounded-2xl border border-sky-blue/20 bg-sky-blue/5 p-4 text-sm text-navy/75">
-          <p className="font-medium text-navy">How to use:</p>
-          <ul className="mt-2 space-y-1 text-xs">
-            <li>1. Tap &quot;Start Camera&quot; for fullscreen view</li>
-            <li>2. Aim at the answer sheet</li>
-            <li>
-              3. Tap the green circle to start live scanning — results
-              overlay in real time
-            </li>
-            <li>4. Green = correct, Red = wrong</li>
-            <li>5. Tap the red stop button to pause scanning</li>
-          </ul>
-        </div>
+        {!cameraActive && (
+          <div className="rounded-2xl border border-outline-variant/30 bg-surface-container p-4 text-sm text-on-surface-variant">
+            <p className="font-bold text-on-surface">How to use:</p>
+            <ul className="mt-2 space-y-2 text-xs font-medium">
+              <li>1. Tap &quot;Start Camera&quot; for fullscreen view</li>
+              <li>2. Aim at the answer sheet</li>
+              <li>
+                3. Tap the green circle to start live scanning — results
+                overlay in real time
+              </li>
+              <li>4. Green = correct, Red = wrong</li>
+              <li>5. Tap the red stop button to pause scanning</li>
+            </ul>
+          </div>
+        )}
       </div>
     </section>
   );
